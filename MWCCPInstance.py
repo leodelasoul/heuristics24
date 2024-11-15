@@ -18,12 +18,13 @@ class MWCCPInstance:
 
             """
     file_name = ""
-
+    U_vertices = set()
+    V_vertices = set()
 
     def __int__(self, file_name):
         self.file_name: str = file_name
         self.instance: Dict[str, numpy.ndarray] = {}
-        
+
     def get_instance(self):
         return self.instance
 
@@ -45,7 +46,6 @@ class MWCCPInstance:
             line = line.strip()
             if line == '#edges':
                 edges_section = True
-                constraint_selection = False
                 continue
             if edges_section:
                 if line == '':
@@ -70,18 +70,16 @@ class MWCCPInstance:
             if i not in constraint_dict:
                 constraint_dict[i] = set()
             constraint_dict[i].add(j)
-            
+
 
         # Collect vertex numbers for U and V
-        U_vertices = set()
-        V_vertices = set()
         for i, j, w in edges:
-            U_vertices.add(i)
-            V_vertices.add(j)
+            self.U_vertices.add(i)
+            self.V_vertices.add(j)
 
         # Create U_vector and V_vector with the specified sizes
-        U_vector = np.fromiter(U_vertices, int)
-        V_vector = np.fromiter(V_vertices, int)
+        U_vector = np.fromiter(self.U_vertices, int)
+        V_vector = np.fromiter(self.V_vertices, int)
 
         #max_vertex = max(max(U_vertices, default=0), max(V_vertices, default=0))
         #size = max_vertex + 1  # Adjusting for 1-based indexing
@@ -105,8 +103,13 @@ class MWCCPInstance:
 
         edges = []
 
-        for u,v in zip(np.nditer(self.instance["u"]),np.nditer(self.instance["v"])):
-            edges = edges.append((u, v))
+        for u,v in zip(self.U_vertices,self.V_vertices):
+            edges.append((u, v))
+
+
 
         graph.add_edges_from(edges)
-
+        pos = nx.bipartite_layout(graph, self.U_vertices)
+        nx.draw(graph, pos, with_labels=True,
+                node_color=["skyblue" if node in self.U_vertices else "lightgreen" for node in graph.nodes()])
+        plt.show()
