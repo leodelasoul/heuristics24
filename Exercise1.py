@@ -13,10 +13,11 @@ if __name__ == '__main__':
     ### init problem instance
     mWCCPInstance = MWCCPInstance.MWCCPInstance()
     mWCCPInstance.__int__(FILENAME) # FILENAME
-    mWCCPInstance.draw_instance()
-
+    #mWCCPInstance.draw_instance()
+    mWCCPInstance.set_problem_instance()
     mWCCPSolution = MWCCPSolution.MWCCPSolution(mWCCPInstance)
     mWCCPInstance.get_instance()
+
     # #run_optimization('MWCCP', MWCCPInstance, MWCCPSolution, "instance")
 
 
