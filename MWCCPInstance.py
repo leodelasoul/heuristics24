@@ -75,26 +75,34 @@ class MWCCPInstance:
         # Collect vertex numbers for U and V
         U_vertices = set()
         V_vertices = set()
+        
+        #max_vertex = max(max(U_vertices, default=0), max(V_vertices, default=0))
+        #size = max_vertex + 1  # Adjusting for 1-based indexing
+        size = U_size + V_size + 1
+        weight_matrix = [[0] * size for _ in range(size)]
+
+        adjacency_from_V = {}
+
+        # Fill the weight matrix symmetrically
         for i, j, w in edges:
             U_vertices.add(i)
             V_vertices.add(j)
+
+            weight_matrix[i][j] = w
+            #weight_matrix[j][i] = w  # Symmetry
+
+            # Create adjacency list for V
+            if j not in adjacency_from_V:
+                adjacency_from_V[j] = set()
+            adjacency_from_V[j].add(i)
+
 
         # Create U_vector and V_vector with the specified sizes
         U_vector = np.fromiter(U_vertices, int)
         V_vector = np.fromiter(V_vertices, int)
 
-        #max_vertex = max(max(U_vertices, default=0), max(V_vertices, default=0))
-        #size = max_vertex + 1  # Adjusting for 1-based indexing
-        size = U_size + V_size + 1
 
-        weight_matrix = [[0] * size for _ in range(size)]
-
-        # Fill the weight matrix symmetrically
-        for i, j, w in edges:
-            weight_matrix[i][j] = w
-            #weight_matrix[j][i] = w  # Symmetry
-
-        self.instance = {"u": U_vector, "v": V_vector, "c": constraint_dict, "w": weight_matrix}
+        self.instance = {"u": U_vector, "v": V_vector, "c": constraint_dict, "w": weight_matrix, "adj_v": adjacency_from_V, "n": size}
 
     def draw_instance(self):
         graph = nx.Graph()
