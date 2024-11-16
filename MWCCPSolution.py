@@ -1,13 +1,11 @@
 from pymhlib.permutation_solution import PermutationSolution
-
 from MWCCPInstance import MWCCPInstance
 
 
 class MWCCPSolution(PermutationSolution):
-    
-    def __init__(self, inst: MWCCPInstance):
-        super().__init__(len(inst.get_instance()["u"]), inst=inst.get_instance())
 
+    def __init__(self, inst: MWCCPInstance, length: int, **kwargs):
+        super().__init__(len(inst.get_instance()["u"]), inst=inst.get_instance())
 
     def copy(self):
         sol = MWCCPSolution(self.inst)
