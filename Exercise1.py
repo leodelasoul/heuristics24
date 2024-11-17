@@ -32,8 +32,12 @@ FILENAME: str = os.path.join(DIRNAME, 'test_instances/small/inst_50_4_00001')
 if __name__ == '__main__':
     parser = get_settings_parser()
     parser.set_defaults(mh_titer=1000)
-    ###INIT
-    mWCCPInstance = MWCCPInstance.MWCCPInstance("instance")  # FILENAME
+
+
+    ### init problem instance
+    mWCCPInstance = MWCCPInstance.MWCCPInstance()
+    mWCCPInstance.__int__(FILENAME) # FILENAME
+    #mWCCPInstance.draw_instance()
     mWCCPInstance.set_problem_instance()
     mWCCPSolution = MWCCPSolution.MWCCPSolution(mWCCPInstance, len(mWCCPInstance.get_instance()["u"]))
     mWCCPInstance.get_instance()
@@ -41,6 +45,23 @@ if __name__ == '__main__':
 
     print(mWCCPSolution.calc_objective())
 
+
+    parser = get_settings_parser()
+    parser.add_argument("--alg", type=str, default='gvns', help='optimization algorithm to be used '
+                                                                '(gvns, alns, pbig, par_alns, ssga, sa)')
+    parser.add_argument("--inst_file", type=str, default=mWCCPInstance,
+                        help='problem instance file')
+    parser.add_argument("--meths_ch", type=int, default=1,
+                        help='number of construction heuristics to be used')
+    parser.add_argument("--meths_li", type=int, default=1,
+                        help='number of local improvement methods to be used')
+    parser.add_argument("--meths_sh", type=int, default=5,
+                        help='number of shaking methods to be used')
+    parser.add_argument("--meths_de", type=int, default=3,
+                        help='number of destroy methods to be used')
+    parser.add_argument("--meths_re", type=int, default=3,
+                        help='number of repair methods to be used')
+    parse_settings(None, 0)
 
     # from common.py file
     """
@@ -70,7 +91,4 @@ if __name__ == '__main__':
     alg.main_results()
 
     # #run_optimization('MWCCP', MWCCPInstance, MWCCPSolution, "instance")
-
-
-
 
