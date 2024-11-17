@@ -28,11 +28,12 @@ from pymhlib.ssga import SteadyStateGeneticAlgorithm
 DIRNAME = os.path.dirname(__file__)
 FILENAME: str = os.path.join(DIRNAME, 'test_instances/small/inst_50_4_00001')
 FILENAME_COMPET: str = os.path.join(DIRNAME, 'competition_instances/inst_50_4_00001')
+#FILENAME_LARGE: str = os.path.join(DIRNAME, 'test_instances/la')
 if __name__ == '__main__':
     parser = get_settings_parser()
     parser.set_defaults(mh_titer=1000)
     ###INIT
-    mWCCPInstance = MWCCPInstance(FILENAME_COMPET)  # FILENAME
+    mWCCPInstance = MWCCPInstance(FILENAME)  # FILENAME
     #mWCCPInstance = MWCCPInstance.MWCCPInstance("instance")  # FILENAME
     mWCCPInstance.set_problem_instance()
     mWCCPSolution = MWCCPSolution(mWCCPInstance)
@@ -71,8 +72,8 @@ if __name__ == '__main__':
 
     # #TODO: find out how settings are used in common.py so that following code works
     alg = GVNS(mWCCPSolution,
-                    [Method(f"ch{i}", MWCCPSolution.construct, i) for i in range(settings.meths_ch)],
-                    [],
+                    [Method(f"construct{i}", MWCCPSolution.construct, i) for i in range(settings.meths_ch)],
+                    [Method(f"local-2opt{i}", MWCCPSolution.local_improve, i) for i in range(1, settings.meths_li + 1)],
                     [],
                     None)
     alg.run()
