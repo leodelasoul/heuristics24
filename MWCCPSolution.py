@@ -1,5 +1,5 @@
-from pymhlib.permutation_solution import PermutationSolution
 import numpy as np
+from pymhlib.permutation_solution import PermutationSolution
 from pymhlib.solution import TObj
 
 from MWCCPInstance import MWCCPInstance
@@ -12,7 +12,12 @@ class MWCCPSolution(PermutationSolution):
     instance_c: dict[(int, int)]
     instance_adj_v: dict[int, set[int]]
     instance_edges: list[(int, int, int)]
+
     to_maximize = False
+    x = None
+    w = list[list[int]]
+    _par = 0
+
     def __init__(self, inst: MWCCPInstance):
         super().__init__(inst.n, inst=inst)
         self.obj_val_valid = False
@@ -66,7 +71,7 @@ class MWCCPSolution(PermutationSolution):
         """
         self.initialize(par)
 
-    def construct(self, par, _result):
+    def construct(self, _par, _result):
         """
         Construct a solution using a greedy heuristic.
 
@@ -99,8 +104,31 @@ class MWCCPSolution(PermutationSolution):
         self.x = np.array(sorted_V)
         self.invalidate()
 
-    def construct_random(self):
-        np.random.shuffle(self.x)
+
+    def is_constraint_valid(self, p1, p2):
+        x = self.x
+        x[p1],x[p2] = x[p2],x[p1]
+        if bool(x[p1] in self.instance_c.keys()):
+            c = self.instance_c[x[p1]]
+            if x[p2] in c:
+                x[p1], x[p2] = x[p2], x[p1]
+                return False
+        x[p1], x[p2] = x[p2], x[p1]
+        return True
+
+    def construct_random(self, _par, _result):
+        x = self.x
+        np.random.shuffle(x)
+        for i in x:
+            if i in self.instance_c.keys():
+                constrains = self.instance_c[i]
+                for j in constrains:
+                    idx1 = np.where(x == i)[0][0]
+                    idx2 = np.where(x == j)[0][0]
+                    x[idx1], x[idx2] = x[idx2], x[idx1]
+        self.x = x
+        if _par <= 5:
+            self.construct_random(_par+1, self.x)
 
     def local_improve(self, _par, _result):
         self.two_opt_neighborhood_search(True)
@@ -120,19 +148,10 @@ class MWCCPSolution(PermutationSolution):
         x = self.x
         x[p1], x[p2] = x[p2], x[p1]
         self.invalidate()
-        if x[p2] in self.instance_c.keys():
-            c = self.instance_c[x[p2]]
-            if x[p1] in c:
-                delta = np.inf
-            else:
-                delta = self.obj() - obj
-        else:
-            delta = self.obj() - obj
-
+        delta = self.obj() - obj
         x[p1], x[p2] = x[p2], x[p1]
         self.obj_val = obj
         return delta
-
 
     def two_opt_neighborhood_search(self, best: bool):
         n = self.inst.n
@@ -144,16 +163,16 @@ class MWCCPSolution(PermutationSolution):
         for idx, p1 in enumerate(order[:n - 1]):
             for p2 in order[idx + 1:]:
                 # consider exchange of positions p1 and p2
-                delta = self.two_exchange_move_delta_eval(p1, p2)
-                # obj_val = self.calc_objective()
-                if self.is_better_obj(delta, best_delta):
-                    if not best:
-                        self.x[p1], self.x[p2] = self.x[p2], self.x[p1]
-                        self.obj_val += delta
-                        return True
-                    best_delta = delta
-                    best_p1 = p1
-                    best_p2 = p2
+                if self.is_constraint_valid(p1,p2):
+                    delta = self.two_exchange_move_delta_eval(p1, p2)
+                    if self.is_better_obj(delta, best_delta):
+                        if not best:
+                            self.x[p1], self.x[p2] = self.x[p2], self.x[p1]
+                            self.obj_val += delta
+                            return True
+                        best_delta = delta
+                        best_p1 = p1
+                        best_p2 = p2
         if best_p1:
             self.x[best_p1], self.x[best_p2] = self.x[best_p2], self.x[best_p1]
             self.obj_val += best_delta

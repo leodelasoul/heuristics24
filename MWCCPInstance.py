@@ -185,13 +185,3 @@ class MWCCPInstance:
 
         self.instance = {"u": U_vector, "v": V_vector, "c": constraint_dict, "w": weight_matrix, "adj_v": adjacency_from_V, "n": U_size}
 
-    def draw_instance(self):
-        graph = nx.Graph()
-
-        self.set_problem_instance()
-        graph.add_nodes_from(self.instance["u"], bipartite=0)  # Top nodes
-        graph.add_nodes_from(self.instance["v"], bipartite=1)  # Bottom nodes
-
-        top_nodes = [i for i in range(1, self.instance["u"].size + 1)]
-        w: list[list[int]] = self.instance["w"]
-        util.draw_big_instance(w, graph, top_nodes) if len(w) > 50 else util.draw_small_instance(w, graph, top_nodes)

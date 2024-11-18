@@ -2,6 +2,7 @@ import os
 
 from pymhlib.settings import get_settings_parser
 
+import util
 from MWCCPInstance import *
 from MWCCPSolution import *
 from pymhlib.demos.common import run_optimization, data_dir
@@ -33,13 +34,12 @@ if __name__ == '__main__':
     parser = get_settings_parser()
     parser.set_defaults(mh_titer=1000)
     ###INIT
-    mWCCPInstance = MWCCPInstance(FILENAME)  # FILENAME
-    #mWCCPInstance = MWCCPInstance.MWCCPInstance("instance")  # FILENAME
+    #mWCCPInstance = MWCCPInstance(FILENAME)  # FILENAME
+    mWCCPInstance = MWCCPInstance("instance")  # FILENAME
     mWCCPInstance.set_problem_instance()
     mWCCPSolution = MWCCPSolution(mWCCPInstance)
     #mWCCPSolution = MWCCPSolution.MWCCPSolution(mWCCPInstance, len(mWCCPInstance.get_instance()["u"]))
     mWCCPInstance.get_instance()
-    #mWCCPInstance.draw_instance()
 
 
 
@@ -66,20 +66,24 @@ if __name__ == '__main__':
     #instance = mWCCPInstance(settings.inst_file)
     logger.info("%s instance read:\n%s", "MWCCP", str(mWCCPInstance))
     #solution = mWCCPSolution(instance)
-
+    util.text = "Before"
     #logger.info("Solution: %s, obj=%f\n", MWCCPSolution, MWCCPSolution.obj())
+    util.draw_instance(u=mWCCPSolution.instance_u, x=mWCCPSolution.x, w=mWCCPSolution.instance_w)
 
 
     # #TODO: find out how settings are used in common.py so that following code works
     alg = GVNS(mWCCPSolution,
-                    [Method(f"construct{i}", MWCCPSolution.construct, i) for i in range(settings.meths_ch)],
+                    [Method(f"construct{i}",  MWCCPSolution.construct_random, i) for i in range(settings.meths_ch)],
                     [Method(f"local-2opt{i}", MWCCPSolution.local_improve, i) for i in range(1, settings.meths_li + 1)],
                     [],
-                    None)
+                    None, False)
     alg.run()
     logger.info("")
     alg.method_statistics()
     alg.main_results()
+    util.text = "After"
+    util.draw_instance(u=mWCCPSolution.instance_u, x=mWCCPSolution.x, w=mWCCPSolution.instance_w)
+
 
     # #run_optimization('MWCCP', MWCCPInstance, MWCCPSolution, "instance")
 
