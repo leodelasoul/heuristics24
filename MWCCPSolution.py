@@ -14,6 +14,7 @@ class MWCCPSolution(PermutationSolution):
     instance_edges: list[(int, int, int)]
 
     to_maximize = False
+    random_order = False
     x = None
     w = list[list[int]]
     _par = 0
@@ -104,34 +105,48 @@ class MWCCPSolution(PermutationSolution):
         self.x = np.array(sorted_V)
         self.invalidate()
 
-
     def is_constraint_valid(self, p1, p2):
         x = self.x
-        x[p1],x[p2] = x[p2],x[p1]
-        if bool(x[p1] in self.instance_c.keys()):
-            c = self.instance_c[x[p1]]
-            if x[p2] in c:
-                x[p1], x[p2] = x[p2], x[p1]
+        first = x[p1]
+        second = x[p2]
+        if bool(second in self.instance_c.keys()):
+            if bool(first in self.instance_c[second]):
                 return False
-        x[p1], x[p2] = x[p2], x[p1]
         return True
 
+    def check_order_constraints(self, order, construct):
+        # Repeat until all constraints are satisfied
+        swapped = True
+        constraint_pairs = {(a, b) for a, values in self.instance_c.items() for b in
+                            (values if isinstance(values, list) else [values])}
+        arr = np.array([self.x[i] for i in np.nditer(order)])
+        while swapped:
+            swapped = False
+            for a, b in constraint_pairs:
+                indices_a = np.where(arr == a)[0]
+                indices_b = np.where(arr == b)[0]
+                if indices_a.size == 0 or indices_b.size == 0:
+                    continue
+                index_a = indices_a[0]
+                index_b = indices_b[0]
+                if index_a > index_b:
+                    arr[index_a], arr[index_b] = arr[index_b], arr[index_a]
+                    order[index_a], order[index_b] = order[index_b], order[index_a]
+                    swapped = True
+        x = np.array([self.x[i] for i in np.nditer(order)])
+        if construct:
+            return x
+        return order
+
     def construct_random(self, _par, _result):
-        x = self.x
-        np.random.shuffle(x)
-        for i in x:
-            if i in self.instance_c.keys():
-                constrains = self.instance_c[i]
-                for j in constrains:
-                    idx1 = np.where(x == i)[0][0]
-                    idx2 = np.where(x == j)[0][0]
-                    x[idx1], x[idx2] = x[idx2], x[idx1]
-        self.x = x
+        order = np.arange(self.inst.n)
+        np.random.shuffle(order)
+        self.x = self.check_order_constraints(order, construct=True)
         if _par <= 5:
-            self.construct_random(_par+1, self.x)
+            self.construct_random(_par + 1, self.x)
 
     def local_improve(self, _par, _result):
-        self.two_opt_neighborhood_search(True)
+        self.two_opt_neighborhood_search(False)
 
     def two_exchange_move_delta_eval(self, p1: int, p2: int) -> TObj:
         """Return delta value in objective when exchanging positions p1 and p2 in self.x.
@@ -160,10 +175,11 @@ class MWCCPSolution(PermutationSolution):
         best_p2 = None
         order = np.arange(n)
         np.random.shuffle(order)
+        order = self.check_order_constraints(order,construct=False)
         for idx, p1 in enumerate(order[:n - 1]):
             for p2 in order[idx + 1:]:
                 # consider exchange of positions p1 and p2
-                if self.is_constraint_valid(p1,p2):
+                if self.is_constraint_valid(p1, p2):
                     delta = self.two_exchange_move_delta_eval(p1, p2)
                     if self.is_better_obj(delta, best_delta):
                         if not best:
@@ -185,7 +201,7 @@ class MWCCPSolution(PermutationSolution):
 
         :raises ValueError: if problem detected.
         """
-        for node, constraint_nodes in self.inst.get_instance()["c"].items():
-            for v_prime in constraint_nodes:
+        for node, constraint_nodes in self.instance_c.items():
+            for v_prime in self.instance_c[node]:
                 if list(self.x).index(node) >= list(self.x).index(v_prime):
                     raise ValueError(f"Constraint {node} {v_prime} violated.")
