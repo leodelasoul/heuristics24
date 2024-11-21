@@ -43,7 +43,7 @@ if __name__ == '__main__':
                         help='problem instance file')
     parser.add_argument("--meths_ch", type=int, default=1,
                         help='number of construction heuristics to be used')
-    parser.add_argument("--meths_li", type=int, default=1,
+    parser.add_argument("--meths_li", type=int, default=2,
                         help='number of local improvement methods to be used')
     parser.add_argument("--meths_sh", type=int, default=5,
                         help='number of shaking methods to be used')
@@ -64,9 +64,8 @@ if __name__ == '__main__':
 
     # #TODO: find out how settings are used in common.py so that following code works
     alg = GVNS(mWCCPSolution,
-               [Method(f"construct{i}", MWCCPSolution.construct_random, i) for i in range(settings.meths_ch)],
-               [],
-               # [Method(f"local-2opt{i}", MWCCPSolution.local_improve, i) for i in range(1, settings.meths_li + 1)],
+               [Method(f"construct{i}", MWCCPSolution.construct, i) for i in range(settings.meths_ch)],
+               [Method(f"local-2opt{i}", MWCCPSolution.local_improve, i) for i in range(1, settings.meths_li + 1)],
                [],
                None, False)
     alg.run()

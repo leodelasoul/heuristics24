@@ -1,6 +1,7 @@
 import numpy as np
 from pymhlib.permutation_solution import PermutationSolution
 from pymhlib.solution import TObj
+import sys
 
 from MWCCPInstance import MWCCPInstance
 
@@ -146,7 +147,7 @@ class MWCCPSolution(PermutationSolution):
             self.construct_random(_par + 1, self.x)
 
     def local_improve(self, _par, _result):
-        self.two_opt_neighborhood_search(False)
+        self.two_opt_neighborhood_search(True)
 
     def two_exchange_move_delta_eval(self, p1: int, p2: int) -> TObj:
         """Return delta value in objective when exchanging positions p1 and p2 in self.x.
@@ -168,32 +169,72 @@ class MWCCPSolution(PermutationSolution):
         self.obj_val = obj
         return delta
 
+    prior_obj_val = sys.maxsize
+
     def two_opt_neighborhood_search(self, best: bool):
         n = self.inst.n
-        best_delta = 0
-        best_p1 = None
-        best_p2 = None
+        best_sol = self.obj_val
         order = np.arange(n)
-        np.random.shuffle(order)
-        order = self.check_order_constraints(order,construct=False)
+        x = self.x
         for idx, p1 in enumerate(order[:n - 1]):
             for p2 in order[idx + 1:]:
-                # consider exchange of positions p1 and p2
-                if self.is_constraint_valid(p1, p2):
-                    delta = self.two_exchange_move_delta_eval(p1, p2)
-                    if self.is_better_obj(delta, best_delta):
-                        if not best:
-                            self.x[p1], self.x[p2] = self.x[p2], self.x[p1]
-                            self.obj_val += delta
-                            return True
-                        best_delta = delta
-                        best_p1 = p1
-                        best_p2 = p2
-        if best_p1:
-            self.x[best_p1], self.x[best_p2] = self.x[best_p2], self.x[best_p1]
-            self.obj_val += best_delta
-            return True
+                order[p1], order[p2] = order[p2], order[p1]  # 2 opt move
+                order = self.check_order_constraints(order,
+                                                     construct=False)  # check if it was valid, if not rearrange invalids
+                x = np.array([self.x[i] for i in np.nditer(order)])  # construct x out of our ordered indices
+                self.x = x  # set current solution
+                current_obj_val = self.calc_objective()
+                if best and best_sol >  current_obj_val:  # local search best improvement
+                    best_sol = current_obj_val
+                    self.obj_val = best_sol
+                elif not best:
+                    if self.prior_obj_val > current_obj_val:
+                        self.obj_val = current_obj_val
+                self.prior_obj_val = self.calc_objective()
+
         return False
+
+    # Search
+    # N(x) in a
+    # systematic
+    # order, take
+    # first
+    # solution
+    # that is better
+    # than
+    # x.
+
+    # def two_opt_neighborhood_search(self, best: bool):
+    #     n = self.inst.n
+    #     best_delta = 0
+    #     best_p1 = None
+    #     best_p2 = None
+    #     order = np.arange(n)
+    #     np.random.shuffle(order)
+    #     order = self.check_order_constraints(order,construct=False)
+    #     for idx, p1 in enumerate(order[:n - 1]):
+    #         for p2 in order[idx + 1:]:
+    #             order[p1], order[p2] = order[p2], order[p1]  # 2 opt move
+    #             order = self.check_order_constraints(order,
+    #                                                  construct=False)  # check if it was valid, if not rearrange invalids
+    #             x = np.array([self.x[i] for i in np.nditer(order)])  # construct x out of our ordered indices
+    #
+    #             # consider exchange of positions p1 and p2
+    #             if self.is_constraint_valid(p1, p2):
+    #                 delta = self.two_exchange_move_delta_eval(p1, p2)
+    #                 if self.is_better_obj(delta, best_delta):
+    #                     if not best:
+    #                         self.x[p1], self.x[p2] = self.x[p2], self.x[p1]
+    #                         self.obj_val += delta
+    #                         return True
+    #                     best_delta = delta
+    #                     best_p1 = p1
+    #                     best_p2 = p2
+    #     if best_p1:
+    #         self.x[best_p1], self.x[best_p2] = self.x[best_p2], self.x[best_p1]
+    #         self.obj_val += best_delta
+    #         return True
+    #     return False
 
     def check(self):
         """
