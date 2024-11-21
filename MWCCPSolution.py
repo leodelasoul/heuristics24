@@ -1,3 +1,6 @@
+import random
+from typing import Any
+
 import numpy as np
 from pymhlib.permutation_solution import PermutationSolution
 from pymhlib.solution import TObj
@@ -147,7 +150,30 @@ class MWCCPSolution(PermutationSolution):
             self.construct_random(_par + 1, self.x)
 
     def local_improve(self, _par, _result):
+        '''
+        Scheduler Method for local search
+        :param _par: 
+        :param _result: 
+        :return: returns True if a an improved solution is found
+        '''''
         self.two_opt_neighborhood_search(True)
+
+    def shaking(self, _par: Any, _result):
+        '''
+        Scheduler method for shaking picks random vertices and shuffles them unless they are within the constrain dict
+        :param _par:
+        :param _result:
+        :return:
+        '''
+        for vert in range(_par):
+            a = random.randint(0, self.inst.n - 1)
+            b = random.randint(0, self.inst.n - 1)
+            if bool(a in self.instance_c.keys()) ^ bool(b in self.instance_c.keys()):
+                continue
+            else:
+                self.x[a], self.x[b] = self.x[b], self.x[a]
+                self.invalidate()
+
 
     def two_exchange_move_delta_eval(self, p1: int, p2: int) -> TObj:
         """Return delta value in objective when exchanging positions p1 and p2 in self.x.
@@ -184,7 +210,7 @@ class MWCCPSolution(PermutationSolution):
                 x = np.array([self.x[i] for i in np.nditer(order)])  # construct x out of our ordered indices
                 self.x = x  # set current solution
                 current_obj_val = self.calc_objective()
-                if best and best_sol >  current_obj_val:  # local search best improvement
+                if best and best_sol > current_obj_val:  # local search best improvement
                     best_sol = current_obj_val
                     self.obj_val = best_sol
                 elif not best:
@@ -193,17 +219,6 @@ class MWCCPSolution(PermutationSolution):
                 self.prior_obj_val = self.calc_objective()
 
         return False
-
-    # Search
-    # N(x) in a
-    # systematic
-    # order, take
-    # first
-    # solution
-    # that is better
-    # than
-    # x.
-
     # def two_opt_neighborhood_search(self, best: bool):
     #     n = self.inst.n
     #     best_delta = 0
