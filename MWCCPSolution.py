@@ -21,11 +21,11 @@ class MWCCPSolution(PermutationSolution):
     random_order = False
     x = None
     w = list[list[int]]
-    _par = 0
+    prior_obj_val = sys.maxsize
 
-    def __init__(self, inst: MWCCPInstance):
-        super().__init__(inst.n, inst=inst)
-        self.obj_val_valid = False
+    # def __init__(self, inst: MWCCPInstance):
+    #     super().__init__(inst.n, inst=inst)
+    #     self.obj_val_valid = False
 
     def __init__(self, inst: MWCCPInstance, init=True, **kwargs):
         super().__init__(len(inst.get_instance()["u"]), init=False, inst=inst)
@@ -119,6 +119,13 @@ class MWCCPSolution(PermutationSolution):
         return True
 
     def check_order_constraints(self, order, construct):
+        '''
+        Used to construct a valid order after a move operator is applied, does not take delta evaluation into
+        account, needs to be extended maybe
+        :param order:
+        :param construct:
+        :return:
+        '''
         # Repeat until all constraints are satisfied
         swapped = True
         constraint_pairs = {(a, b) for a, values in self.instance_c.items() for b in
@@ -143,11 +150,20 @@ class MWCCPSolution(PermutationSolution):
         return order
 
     def construct_random(self, _par, _result):
+        '''
+        construction heuristic that iteratively generates random orders of v
+        :param _par:
+        :param _result:
+        :return:
+        '''
         order = np.arange(self.inst.n)
         np.random.shuffle(order)
-        self.x = self.check_order_constraints(order, construct=True)
-        if _par <= 5:
-            self.construct_random(_par + 1, self.x)
+        x = self.check_order_constraints(order, construct=True)
+        self.x = x
+        current_obj_val = self.calc_objective()
+        if self.is_better_obj(current_obj_val, self.prior_obj_val):
+            self.obj_val = current_obj_val
+        self.prior_obj_val = self.calc_objective()
 
     def local_improve(self, _par, _result):
         '''
@@ -156,7 +172,7 @@ class MWCCPSolution(PermutationSolution):
         :param _result: 
         :return: returns True if a an improved solution is found
         '''''
-        self.two_opt_neighborhood_search(True)
+        self.two_opt_neighborhood_search(False)
 
     def shaking(self, _par: Any, _result):
         '''
@@ -168,7 +184,7 @@ class MWCCPSolution(PermutationSolution):
         for vert in range(_par):
             a = random.randint(0, self.inst.n - 1)
             b = random.randint(0, self.inst.n - 1)
-            if bool(a in self.instance_c.keys()) ^ bool(b in self.instance_c.keys()):
+            if self.is_constraint_valid(a,b):
                 continue
             else:
                 self.x[a], self.x[b] = self.x[b], self.x[a]
@@ -195,7 +211,13 @@ class MWCCPSolution(PermutationSolution):
         self.obj_val = obj
         return delta
 
-    prior_obj_val = sys.maxsize
+    def one_opt_neighborhood_search(self, best: bool):
+        x = self.x
+        best_p1 = self.instance_edges
+        for i in self.instance_v:
+            if self.check(x):
+                pass
+
 
     def two_opt_neighborhood_search(self, best: bool):
         n = self.inst.n
@@ -251,13 +273,24 @@ class MWCCPSolution(PermutationSolution):
     #         return True
     #     return False
 
-    def check(self):
+    def grasp(self):
+        pass
+
+    def check(self, *args):
         """
         Check if valid solution. All constraints must be satisfied.
 
         :raises ValueError: if problem detected.
         """
+        x = self.x
+        a = None
+        for a in args:
+            if len(x) > 0:
+                x = a
         for node, constraint_nodes in self.instance_c.items():
             for v_prime in self.instance_c[node]:
-                if list(self.x).index(node) >= list(self.x).index(v_prime):
-                    raise ValueError(f"Constraint {node} {v_prime} violated.")
+                if list(x).index(node) >= list(x).index(v_prime):
+                    if a is not None:
+                        return False
+                    else:
+                        raise ValueError(f"Constraint {node} {v_prime} violated.")
