@@ -50,8 +50,8 @@ if __name__ == '__main__':
     #            None, False)
     #
     alg = GVNS(mWCCPSolution,
-               [Method(f"construct{i}", MWCCPSolution.construct_random, i) for i in range(settings.meths_ch)],
-               [],
+               [Method(f"construct{i}", MWCCPSolution.construct, i) for i in range(settings.meths_ch)],
+               [Method(f"local-2opt{i}", MWCCPSolution.local_improve, i) for i in range(1, settings.meths_li + 1)],
                [],
                None, False)
 

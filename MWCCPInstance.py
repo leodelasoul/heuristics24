@@ -69,7 +69,8 @@ class MWCCPInstance:
             if i not in constraint_dict:
                 constraint_dict[i] = []
             constraint_dict[i].append(j)
-            
+        
+        constraints = np.array(constraints)
 
         # Collect vertex numbers for U and V
         U_vertices = set()
@@ -102,7 +103,7 @@ class MWCCPInstance:
 
         self.n = U_size
 
-        self.instance = {"u": U_vector, "v": V_vector, "c": constraint_dict, "w": weight_matrix, "adj_v": adjacency_from_V, "n": U_size}
+        self.instance = {"u": U_vector, "v": V_vector, "c": constraint_dict, "w": weight_matrix, "adj_v": adjacency_from_V, "c_tup": constraints, "n": U_size}
 
     def get_instance(self):
         return self.instance
@@ -151,6 +152,7 @@ class MWCCPInstance:
                 constraint_dict[i] = []
             constraint_dict[i].append(j)
             
+        constraints = np.array(constraints)
 
         # Collect vertex numbers for U and V
         U_vertices = set()
@@ -183,5 +185,5 @@ class MWCCPInstance:
 
         self.n = U_size
 
-        self.instance = {"u": U_vector, "v": V_vector, "c": constraint_dict, "w": weight_matrix, "adj_v": adjacency_from_V, "n": U_size}
+        self.instance = {"u": U_vector, "v": V_vector, "c": constraint_dict, "w": weight_matrix, "c_tup": constraints, "adj_v": adjacency_from_V, "n": U_size}
 

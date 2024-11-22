@@ -13,7 +13,8 @@ class MWCCPSolution(PermutationSolution):
     instance_w: list[list[int]]
     instance_u: list[int]
     instance_v: list[int]
-    instance_c: dict[(int, int)]
+    instance_c: dict[int, list[int]]
+    instance_c_tup: list[(int, int)]
     instance_adj_v: dict[int, set[int]]
     instance_edges: list[(int, int, int)]
 
@@ -34,6 +35,7 @@ class MWCCPSolution(PermutationSolution):
         self.instance_v = inst.get_instance()["v"]
         self.instance_adj_v = inst.get_instance()["adj_v"]
         self.instance_c = inst.get_instance()["c"]
+        self.instance_c_tup = inst.get_instance()["c_tup"]
         inst.n = len(self.instance_v)
 
         edges = []
@@ -128,8 +130,9 @@ class MWCCPSolution(PermutationSolution):
         '''
         # Repeat until all constraints are satisfied
         swapped = True
-        constraint_pairs = {(a, b) for a, values in self.instance_c.items() for b in
-                            (values if isinstance(values, list) else [values])}
+        #constraint_pairs = {(a, b) for a, values in self.instance_c.items() for b in
+        #                    (values if isinstance(values, list) else [values])}
+        constraint_pairs = self.instance_c_tup
         arr = np.array([self.x[i] for i in np.nditer(order)])
         while swapped:
             swapped = False
