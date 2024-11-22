@@ -17,7 +17,7 @@ if __name__ == '__main__':
     parser = get_settings_parser()
     parser.set_defaults(mh_titer=100)
     ###INIT
-    mWCCPInstance = MWCCPInstance(FILENAME_COMPET)  # FILENAME
+    mWCCPInstance = MWCCPInstance("instance")  # FILENAME
     mWCCPInstance.set_problem_instance()
     mWCCPSolution = MWCCPSolution(mWCCPInstance)
     mWCCPInstance.get_instance()

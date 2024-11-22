@@ -70,6 +70,7 @@ class MWCCPInstance:
                 constraint_dict[i] = []
             constraint_dict[i].append(j)
         
+        edges = list(edges)
         constraints = np.array(constraints)
 
         # Collect vertex numbers for U and V
@@ -80,6 +81,7 @@ class MWCCPInstance:
         #size = max_vertex + 1  # Adjusting for 1-based indexing
         size = U_size + V_size + 1
         weight_matrix = [[0] * size for _ in range(size)]
+        edge_matrix = [[0] * size for _ in range(size)]
 
         adjacency_from_V = {}
 
@@ -89,7 +91,10 @@ class MWCCPInstance:
             V_vertices.add(j)
 
             weight_matrix[i][j] = w
-            #weight_matrix[j][i] = w  # Symmetry
+            weight_matrix[j][i] = w  # Symmetry
+
+            edge_matrix[i][j] = 1
+            edge_matrix[j][i] = 1  # Symmetry
 
             # Create adjacency list for V
             if j not in adjacency_from_V:
@@ -103,7 +108,7 @@ class MWCCPInstance:
 
         self.n = U_size
 
-        self.instance = {"u": U_vector, "v": V_vector, "c": constraint_dict, "w": weight_matrix, "adj_v": adjacency_from_V, "c_tup": constraints, "n": U_size}
+        self.instance = {"u": U_vector, "v": V_vector, "c": constraint_dict, "w": weight_matrix, "edge_matrix": edge_matrix, "adj_v": adjacency_from_V, "edges": edges, "c_tup": constraints, "n": U_size}
 
     def get_instance(self):
         return self.instance
@@ -152,6 +157,7 @@ class MWCCPInstance:
                 constraint_dict[i] = []
             constraint_dict[i].append(j)
             
+        edges = list(edges)
         constraints = np.array(constraints)
 
         # Collect vertex numbers for U and V
@@ -161,7 +167,9 @@ class MWCCPInstance:
         #max_vertex = max(max(U_vertices, default=0), max(V_vertices, default=0))
         #size = max_vertex + 1  # Adjusting for 1-based indexing
         size = U_size + V_size + 1
-        weight_matrix = [[0] * size for _ in range(size)]
+        weight_matrix = [[0] * size for _ in range(size)] 
+        edge_matrix = [[0] * size for _ in range(size)]
+
 
         adjacency_from_V = {}
 
@@ -171,7 +179,10 @@ class MWCCPInstance:
             V_vertices.add(j)
 
             weight_matrix[i][j] = w
-            #weight_matrix[j][i] = w  # Symmetry
+            weight_matrix[j][i] = w  # Symmetry
+
+            edge_matrix[i][j] = 1
+            edge_matrix[j][i] = 1  # Symmetry
 
             # Create adjacency list for V
             if j not in adjacency_from_V:
@@ -185,5 +196,5 @@ class MWCCPInstance:
 
         self.n = U_size
 
-        self.instance = {"u": U_vector, "v": V_vector, "c": constraint_dict, "w": weight_matrix, "c_tup": constraints, "adj_v": adjacency_from_V, "n": U_size}
+        self.instance = {"u": U_vector, "v": V_vector, "c": constraint_dict, "w": weight_matrix, "edges": edges, "c_tup": constraints, "adj_v": adjacency_from_V, "n": U_size}
 

@@ -38,12 +38,15 @@ class MWCCPSolution(PermutationSolution):
         self.instance_c_tup = inst.get_instance()["c_tup"]
         inst.n = len(self.instance_v)
 
-        edges = []
-        for u, i in enumerate(self.instance_w[1:]):
-            for v_index, weight in enumerate(i):
-                if weight > 0:
-                    edges.append((u + 1, v_index, weight))
-        self.instance_edges = edges
+        self.instance_edges = inst.get_instance()["edges"]
+
+        # edges = []
+        # for u, i in enumerate(self.instance_w[1:]):
+        #     for v_index, weight in enumerate(i):
+        #         if weight > 0:
+        #             edges.append((u + 1, v_index, weight))
+        # self.instance_edges = edges
+
         if init:
             self.x = np.array(list(self.instance_v))
 
@@ -65,6 +68,26 @@ class MWCCPSolution(PermutationSolution):
                     objective_value += weight + weights
         # return (total_crossings, objective_value)
         return objective_value
+    
+    
+    def calc_objective_two_opt(self, p1, p2):
+        """Return objective value based on delta value in objective when exchanging positions p1 and p2 in self.x.
+
+        The solution is not changed.
+        required: We know that p1 < p2 and the change does not violate any constraints.
+
+        :param p1: first position 
+        :param p2: second position
+        """
+
+        objective_value = self.obj_val #current objective value
+        if p1 > p2:
+            p1, p2 = p2, p1
+        sublist = self.x[p1:p2+1]
+
+        #TODO: implement delta evaluation
+
+        return None
 
     def initialize(self, k):
         # super().initialize(k) is with random construction
@@ -194,7 +217,27 @@ class MWCCPSolution(PermutationSolution):
                 self.invalidate()
 
 
-    def two_exchange_move_delta_eval(self, p1: int, p2: int) -> TObj:
+    # def two_exchange_move_delta_eval(self, p1: int, p2: int) -> TObj:
+    #     """Return delta value in objective when exchanging positions p1 and p2 in self.x.
+
+    #     The solution is not changed.
+    #     This is a helper function for delta-evaluating solutions when searching a neighborhood that should
+    #     be overloaded with a more efficient implementation for a concrete problem.
+    #     Here we perform the move, calculate the objective value from scratch and revert the move.
+
+    #     :param p1: first position
+    #     :param p2: second position
+    #     """
+    #     obj = self.obj()
+    #     x = self.x
+    #     x[p1], x[p2] = x[p2], x[p1]
+    #     self.invalidate()
+    #     delta = self.obj() - obj
+    #     x[p1], x[p2] = x[p2], x[p1]
+    #     self.obj_val = obj
+    #     return delta
+    
+    def two_opt_move_delta_eval(self, p1, p2):
         """Return delta value in objective when exchanging positions p1 and p2 in self.x.
 
         The solution is not changed.
@@ -205,8 +248,10 @@ class MWCCPSolution(PermutationSolution):
         :param p1: first position
         :param p2: second position
         """
+
         obj = self.obj()
         x = self.x
+
         x[p1], x[p2] = x[p2], x[p1]
         self.invalidate()
         delta = self.obj() - obj
@@ -222,6 +267,7 @@ class MWCCPSolution(PermutationSolution):
                 pass
 
 
+    # two_opt_neighborhood_search - swaps two nodes
     def two_opt_neighborhood_search(self, best: bool):
         n = self.inst.n
         best_sol = self.obj_val
@@ -234,6 +280,8 @@ class MWCCPSolution(PermutationSolution):
                                                      construct=False)  # check if it was valid, if not rearrange invalids
                 x = np.array([self.x[i] for i in np.nditer(order)])  # construct x out of our ordered indices
                 self.x = x  # set current solution
+
+                #TODO: delta evaluation
                 current_obj_val = self.calc_objective()
                 if best and best_sol > current_obj_val:  # local search best improvement
                     best_sol = current_obj_val
@@ -241,6 +289,8 @@ class MWCCPSolution(PermutationSolution):
                 elif not best:
                     if self.prior_obj_val > current_obj_val:
                         self.obj_val = current_obj_val
+                
+                #TODO: delta evaluation
                 self.prior_obj_val = self.calc_objective()
 
         return False
