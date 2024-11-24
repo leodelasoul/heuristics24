@@ -7,7 +7,6 @@ from pymhlib.solution import TObj
 import sys
 
 from v2_MWCCPInstance import v2_MWCCPInstance
-import methods as methods
 
 class v2_MWCCPSolution(PermutationSolution):
     instance_w: list[list[int]]
@@ -23,6 +22,9 @@ class v2_MWCCPSolution(PermutationSolution):
     x = None
     w = list[list[int]]
     prior_obj_val = sys.maxsize
+    
+    #neighborhood index for VND
+    vnd_neighborhood_index = 0
 
     def __init__(self, inst: v2_MWCCPInstance, init=True, **kwargs):
         super().__init__(len(inst.get_instance()["u"]), init=False, inst=inst)
@@ -317,11 +319,23 @@ class v2_MWCCPSolution(PermutationSolution):
                         delta_new += w1 + w2
 
         new_obj = obj + delta_new - delta_old
-        try_out_self_obj = self.calc_objective()
-        try_out_sol_obj = sol.calc_objective()
         if new_obj < obj:
             pass
         return new_obj if new_obj < obj else obj
+    
+    #just take initial order as first construction heuristic (is not really used in grasp because construction is in loop)
+    def construct_grasp(self, _par, _result):
+        self.x = np.array(list(self.instance_v))
+
+    def random_greedy_construction(self, _par, _result):
+        self.construct_random(_par, _result) #should be implemented that it constructs solution with candidate list
+
+    #use local search always on random solution
+    def grasp(self, _par, _result):
+        self.random_greedy_construction(_par, _result) # random (but greedy part is missing)
+        #best improvement used for local search (lecture)
+        self.ls_two_swap_best(_par, _result) # local search
+
 
     #check if solution is valid
     def check(self, *args):
