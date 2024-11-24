@@ -24,7 +24,7 @@ if __name__ == '__main__':
     mWCCPSolution = v2_MWCCPSolution(mWCCPInstance)
 
     ###Parser arguments
-    parser.add_argument("--alg", type=str, default='ls', help='optimization algorithm to be used '
+    parser.add_argument("--alg", type=str, default='gvns', help='optimization algorithm to be used '
                                                                 '(const_det, const_rand, ls, vnd, grasp, gvns, sa, ts)')
     parser.add_argument("--inst_file", type=str, default=mWCCPInstance,
                         help='problem instance file')
@@ -32,7 +32,7 @@ if __name__ == '__main__':
                         help='number of construction heuristics to be used')
     parser.add_argument("--meths_li", type=int, default=1,
                         help='number of local improvement methods to be used')
-    parser.add_argument("--meths_sh", type=int, default=5,
+    parser.add_argument("--meths_sh", type=int, default=1,
                         help='number of shaking methods to be used')
     
     #change manually for step function
@@ -54,14 +54,6 @@ if __name__ == '__main__':
 
     #util.text = "Initial probleminstance"
     #util.draw_instance(u=mWCCPSolution.instance_u, x=mWCCPSolution.x, w=mWCCPSolution.instance_w)
-    
-    #
-    # alg = GVNS(mWCCPSolution,
-    #            [Method(f"construct{i}", MWCCPSolution.construct, i) for i in range(settings.meths_ch)],
-    #            [Method(f"local-2opt{i}", MWCCPSolution.local_improve, i) for i in range(1, settings.meths_li + 1)],
-    #            [Method(f"sh{i}", MWCCPSolution.shaking, i) for i in range(1, settings.meths_sh + 1)],
-    #            None, False)
-    #
 
     if settings.alg == 'const_det':
         alg = GVNS(mWCCPSolution,
@@ -119,7 +111,12 @@ if __name__ == '__main__':
             else: 
                 pass
     elif settings.alg == 'vnd':
-        pass
+        alg = GVNS(mWCCPSolution,
+                    [Method(f"construct{i}", v2_MWCCPSolution.construct, i) for i in range(settings.meths_ch)],
+                    [Method(f"local-2opt", v2_MWCCPSolution.ls_two_swap_best, 1),
+                     Method(f"local-1opt", v2_MWCCPSolution.ls_shift_best, 2)],
+                    [],
+                    None, False)
     elif settings.alg == 'grasp':
         alg = GVNS(mWCCPSolution,
                     [Method(f"construct{i}", v2_MWCCPSolution.construct_grasp, i) for i in range(settings.meths_ch)],
@@ -127,7 +124,13 @@ if __name__ == '__main__':
                     [],
                     None, False) 
     elif settings.alg == 'gvns':
-        pass
+        alg = GVNS(mWCCPSolution,
+                    [Method(f"construct{i}", v2_MWCCPSolution.construct_grasp, i) for i in range(settings.meths_ch)],
+                    [Method(f"local-2opt", v2_MWCCPSolution.ls_two_swap_best, 1),
+                     Method(f"local-1opt", v2_MWCCPSolution.ls_shift_best, 2)],
+                    [Method(f"shaking-2opt", v2_MWCCPSolution.shaking_swap, 1),
+                     Method(f"shaking-1opt", v2_MWCCPSolution.shaking_shift, 2)],
+                    None, False) 
     elif settings.alg == 'sa':
         pass
     elif settings.alg == 'ts':

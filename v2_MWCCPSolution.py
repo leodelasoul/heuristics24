@@ -61,11 +61,6 @@ class v2_MWCCPSolution(PermutationSolution):
     
     #deterministic construction heuristic
     def construct(self, _par, _result):
-        """
-        Construct a solution using a greedy heuristic.
-
-        :return: A feasible permutation of V.
-        """
         # Step 1: compute average position of each node in V
         averages = {}
         V = list(self.instance_v)
@@ -94,12 +89,6 @@ class v2_MWCCPSolution(PermutationSolution):
 
     # random construction heuristic
     def construct_random(self, _par, _result):
-        '''
-        construction heuristic that iteratively generates random orders of v
-        :param _par:
-        :param _result:
-        :return:
-        '''
         order = np.arange(self.inst.n)
         np.random.shuffle(order)
         x = self.check_order_constraints(order, construct=True)
@@ -111,17 +100,8 @@ class v2_MWCCPSolution(PermutationSolution):
 
     # check if new order is valid
     def check_order_constraints(self, order, construct):
-        '''
-        Used to construct a valid order after a move operator is applied, does not take delta evaluation into
-        account, needs to be extended maybe
-        :param order:
-        :param construct:
-        :return:
-        '''
         # Repeat until all constraints are satisfied
         swapped = True
-        #constraint_pairs = {(a, b) for a, values in self.instance_c.items() for b in
-        #                    (values if isinstance(values, list) else [values])}
         constraint_pairs = self.instance_c_tup
         arr = np.array([self.x[i] for i in np.nditer(order)])
         while swapped:
@@ -151,6 +131,16 @@ class v2_MWCCPSolution(PermutationSolution):
             if position[v] > position[v_prime]:
                 return False
         return True
+    
+    #check if change of positions is valid
+    def is_constraint_valid(self, p1, p2):
+        x = self.x
+        first = x[p1]
+        second = x[p2]
+        if bool(second in self.instance_c.keys()):
+            if bool(first in self.instance_c[second]):
+                return False
+        return True
 
     #local search two exchange neighborhood
     def ls_two_swap_best(self, _par, _result):
@@ -163,7 +153,6 @@ class v2_MWCCPSolution(PermutationSolution):
         self.local_improve_swap("random")
 
     #local search shift neighborhood
-
     def ls_shift_best(self, _par, _result):
         self.local_improve_shift("best")
 
@@ -173,16 +162,6 @@ class v2_MWCCPSolution(PermutationSolution):
     def ls_shift_random(self, _par, _result):
         self.local_improve_shift("random")
 
-    #local search reverse subinterval neighborhood
-
-    def ls_reverse_best(self, _par, _result):
-        pass
-
-    def ls_reverse_first(self, _par, _result):
-        pass
-
-    def ls_reverse_random(self, _par, _result):
-        pass
     
     # local search for two exchange neighborhood
     def local_improve_swap(self, step):
@@ -295,6 +274,7 @@ class v2_MWCCPSolution(PermutationSolution):
             counter = 0
 
             while not is_better_obj:
+                # shift node from p1 to position p2
                 p1, p2 = np.random.choice(order, 2, replace=False)
                 original_order = order
                 node_pos = original_order[p1]
@@ -303,7 +283,7 @@ class v2_MWCCPSolution(PermutationSolution):
                 while self.check_order_constraints_bool(order) == False:
                     #swap back to original positions
                     order = original_order
-                    # get two new positions
+                    # shift node from p1 to position p2
                     p1, p2 = np.random.choice(order, 2, replace=False) #get two random positions
                     node_pos = original_order[p1]
                     order = np.delete(order, p1) 
@@ -471,6 +451,38 @@ class v2_MWCCPSolution(PermutationSolution):
 
         return new_obj if new_obj < obj else obj
 
+    # shaking methode for gvns
+    def shaking_swap(self, _par: Any, _result):
+        for _ in range(_par):
+            a = random.randint(0, self.inst.n - 1)
+            b = random.randint(0, self.inst.n - 1)
+            if not self.is_constraint_valid(a,b):
+                continue
+            else:
+                self.x[a], self.x[b] = self.x[b], self.x[a]
+                self.invalidate()
+
+    # shaking methode for gvns
+    def shaking_shift(self, _par: Any, _result):
+        for _ in range(_par):
+            order = np.arange(self.inst.n)
+            p1, p2 = np.random.choice(order, 2, replace=False)
+            original_order = order
+            node_pos = original_order[p1]
+            order = np.delete(order, p1) # Remove node from position p1
+            order = np.insert(order, p2, node_pos) # Insert node at position p2
+            while self.check_order_constraints_bool(order) == False:
+                #swap back to original positions
+                order = original_order
+                # shift node from p1 to position p2
+                p1, p2 = np.random.choice(order, 2, replace=False) #get two random positions
+                node_pos = original_order[p1]
+                order = np.delete(order, p1) 
+                order = np.insert(order, p2, node_pos) 
+
+            #change order of copy x
+            self.x = np.array([self.x[idx] for idx in np.nditer(order)])
+            self.invalidate()
     
     #just take initial order as first construction heuristic (is not really used in grasp because construction is in loop)
     def construct_grasp(self, _par, _result):
@@ -488,11 +500,6 @@ class v2_MWCCPSolution(PermutationSolution):
 
     #check if solution is valid
     def check(self, *args):
-        """
-        Check if valid solution. All constraints must be satisfied.
-
-        :raises ValueError: if problem detected.
-        """
         x = self.x
         a = None
         for a in args:
