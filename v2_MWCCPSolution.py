@@ -22,7 +22,7 @@ class v2_MWCCPSolution(PermutationSolution):
     x = None
     w = list[list[int]]
     prior_obj_val = sys.maxsize
-    
+
     #neighborhood index for VND
     vnd_neighborhood_index = 0
 
@@ -165,13 +165,13 @@ class v2_MWCCPSolution(PermutationSolution):
     #local search shift neighborhood
 
     def ls_shift_best(self, _par, _result):
-        pass
+        self.local_improve_shift("best")
 
     def ls_shift_first(self, _par, _result):
-        pass
+        self.local_improve_shift("first")
 
     def ls_shift_random(self, _par, _result):
-        pass
+        self.local_improve_shift("random")
 
     #local search reverse subinterval neighborhood
 
@@ -278,6 +278,112 @@ class v2_MWCCPSolution(PermutationSolution):
                 return True
             
 
+        return False
+    
+    # local search for two exchange neighborhood
+    def local_improve_shift(self, step):
+        sol = self.copy()
+        n = self.inst.n
+        order = np.arange(n) #to shift every possible position
+        x = sol.x # working on copy
+        current_obj_val = sol.obj_val
+
+        if step == "random":
+            #search through neighborhood randomly
+            #stop search after 10*n iterations
+            is_better_obj = False
+            counter = 0
+
+            while not is_better_obj:
+                p1, p2 = np.random.choice(order, 2, replace=False)
+                original_order = order
+                node_pos = original_order[p1]
+                order = np.delete(order, p1) # Remove node from position p1
+                order = np.insert(order, p2, node_pos) # Insert node at position p2
+                while self.check_order_constraints_bool(order) == False:
+                    #swap back to original positions
+                    order = original_order
+                    # get two new positions
+                    p1, p2 = np.random.choice(order, 2, replace=False) #get two random positions
+                    node_pos = original_order[p1]
+                    order = np.delete(order, p1) 
+                    order = np.insert(order, p2, node_pos) 
+
+                #change order of copy x
+                x = np.array([self.x[idx] for idx in np.nditer(order)])
+                
+                #check if new order is better
+                delta_obj = self.calc_delta_obj_shift(p1, p2, sol)
+                if delta_obj < current_obj_val:
+                    #change actual solution
+                    current_obj_val = delta_obj
+                    self.x = x
+                    self.obj_val = current_obj_val
+                    is_better_obj = True     
+                else:
+                    #change copy back to original order
+                    x = np.array([self.x[idx] for idx in np.nditer(original_order)])
+                    #change order back to original order
+                    order = original_order
+                    counter += 1
+                    #and do random swap again
+                
+                if counter > 10*n:
+                    break
+
+            return is_better_obj
+
+        else:
+            best_sol = sol.obj_val
+            best_p1 = None
+            best_p2 = None
+            if step == "first":
+                best = False
+            else:
+                best = True
+            #search systematically
+
+            for p1 in order:
+                for p2 in range(n):
+                    shifted_order = order
+                    # Create a shifted order
+                    shifted_order = np.delete(shifted_order, p1)  # Remove node at position p1
+                    shifted_order = np.insert(shifted_order, p2, p1)  # Insert node at position p2
+
+                    if self.check_order_constraints_bool(shifted_order) == False:
+                        continue
+                    else:
+                        #order valid -> check if new order is better
+                        #change order of copy x
+                        x = np.array([self.x[idx] for idx in np.nditer(shifted_order)])
+        
+            
+                        delta_sol = self.calc_delta_obj_shift(p1, p2, sol)
+                        if self.is_better_obj(delta_sol, best_sol):
+
+                            current_obj_val = delta_sol
+                            if best and best_sol > current_obj_val:  # best improvement
+                                best_sol = current_obj_val
+                                best_p1 = p1
+                                best_p2 = p2
+                            else: # first improvement
+                                #self.copy_from(sol)
+                                self.x = x
+                                self.obj_val = current_obj_val
+                                return True
+                    
+                    #change copy x and order back to original order and continue
+                    x = np.array([self.x[idx] for idx in np.nditer(order)])
+                                                
+            if best_p1:
+                shifted_order = order
+                shifted_order = np.delete(shifted_order, best_p1)  # Remove node at position p1
+                shifted_order = np.insert(shifted_order, best_p2, best_p1)  # Insert node at position p2
+                self.x = np.array([self.x[idx] for idx in np.nditer(shifted_order)])
+                self.obj_val = best_sol
+                return True
+            
+
         return False  
 
     #calculate delta objective value for swap move
@@ -285,7 +391,6 @@ class v2_MWCCPSolution(PermutationSolution):
         delta_old = 0
         delta_new = 0
         obj = sol.obj()
-
 
         if p1 > p2:
             p1, p2 = p2, p1
@@ -322,6 +427,50 @@ class v2_MWCCPSolution(PermutationSolution):
         if new_obj < obj:
             pass
         return new_obj if new_obj < obj else obj
+    
+    def calc_delta_obj_shift(self, p1, p2, sol):
+        delta_old = 0
+        delta_new = 0
+        obj = sol.obj()  # Current objective value
+        x = sol.x  # Current order
+
+        # Identify the node to be shifted and its neighbors
+        node_to_shift = x[p1]
+        old_neighbors = []
+        if p1 > 0:
+            old_neighbors.append((x[p1 - 1], node_to_shift))  # Left neighbor
+        if p1 < len(x) - 1:
+            old_neighbors.append((node_to_shift, x[p1 + 1]))  # Right neighbor
+
+        # Compute delta_old: crossings caused by edges involving the node at its old position
+        position = {v: i for i, v in enumerate(self.x)}  # Positions of all nodes in self.x
+        for u1, v1, w1 in self.instance_edges:
+            for u2, v2, w2 in self.instance_edges:
+                # Check for crossings where at least one edge involves the shifted node
+                if v1 == node_to_shift or v2 == node_to_shift:
+                    if u1 < u2 and position[v1] > position[v2]:
+                        delta_old += w1 + w2
+
+        # Simulate the shift by removing the node and inserting it at the new position
+        temp_x = list(x)  # Copy of the current order
+        node = temp_x.pop(p1)  # Remove the node from position p1
+        temp_x.insert(p2, node)  # Insert the node at position p2
+
+        # Update positions after the shift
+        new_position = {v: i for i, v in enumerate(temp_x)}
+
+        # Compute delta_new: crossings caused by edges involving the node at its new position
+        for u1, v1, w1 in self.instance_edges:
+            for u2, v2, w2 in self.instance_edges:
+                if v1 == node_to_shift or v2 == node_to_shift:
+                    if u1 < u2 and new_position[v1] > new_position[v2]:
+                        delta_new += w1 + w2
+
+        # Calculate the new objective value
+        new_obj = obj + delta_new - delta_old
+
+        return new_obj if new_obj < obj else obj
+
     
     #just take initial order as first construction heuristic (is not really used in grasp because construction is in loop)
     def construct_grasp(self, _par, _result):

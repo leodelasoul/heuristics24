@@ -16,15 +16,15 @@ FILENAME_COMPET_2: str = os.path.join(DIRNAME, 'competition_instances/inst_200_2
 # FILENAME_LARGE: str = os.path.join(DIRNAME, 'test_instances/la')
 if __name__ == '__main__':
     parser = get_settings_parser()
-    parser.set_defaults(mh_titer=10) # number of iterations
-    parser.set_defaults(mh_ttime=10) # time limit
+    parser.set_defaults(mh_titer=30) # number of iterations
+    parser.set_defaults(mh_ttime=360) # time limit
 
     ###INIT
     mWCCPInstance = v2_MWCCPInstance(FILENAME_COMPET)  # FILENAME
     mWCCPSolution = v2_MWCCPSolution(mWCCPInstance)
 
     ###Parser arguments
-    parser.add_argument("--alg", type=str, default='grasp', help='optimization algorithm to be used '
+    parser.add_argument("--alg", type=str, default='ls', help='optimization algorithm to be used '
                                                                 '(const_det, const_rand, ls, vnd, grasp, gvns, sa, ts)')
     parser.add_argument("--inst_file", type=str, default=mWCCPInstance,
                         help='problem instance file')
@@ -36,11 +36,11 @@ if __name__ == '__main__':
                         help='number of shaking methods to be used')
     
     #change manually for step function
-    parser.add_argument("--meths_ls_step", type=str, default='first',
+    parser.add_argument("--meths_ls_step", type=str, default='best',
                         help='which step function should be used for local search'
                         '(first, best, random)')
     #change manually for move function
-    parser.add_argument("--meths_ls_move", type=str, default='swap',
+    parser.add_argument("--meths_ls_move", type=str, default='shift',
                         help='which step function should be used for local search'
                         '(swap, shift)')
     
@@ -98,7 +98,26 @@ if __name__ == '__main__':
             else: 
                 pass
         elif settings.meths_ls_move == 'shift':
-            pass
+            if settings.meths_ls_step == 'first':
+                alg = GVNS(mWCCPSolution,
+                    [Method(f"construct{i}", v2_MWCCPSolution.construct, i) for i in range(settings.meths_ch)],
+                    [Method(f"local-2opt{i}", v2_MWCCPSolution.ls_shift_first, i) for i in range(1, settings.meths_li + 1)],
+                    [],
+                    None, False)
+            elif settings.meths_ls_step == 'best':
+                alg = GVNS(mWCCPSolution,
+                    [Method(f"construct{i}", v2_MWCCPSolution.construct, i) for i in range(settings.meths_ch)],
+                    [Method(f"local-2opt{i}", v2_MWCCPSolution.ls_shift_best, i) for i in range(1, settings.meths_li + 1)],
+                    [],
+                    None, False)
+            elif settings.meths_ls_step == 'random':
+                alg = GVNS(mWCCPSolution,
+                    [Method(f"construct{i}", v2_MWCCPSolution.construct, i) for i in range(settings.meths_ch)],
+                    [Method(f"local-2opt{i}", v2_MWCCPSolution.ls_shift_random, i) for i in range(1, settings.meths_li + 1)],
+                    [],
+                    None, False)   
+            else: 
+                pass
     elif settings.alg == 'vnd':
         pass
     elif settings.alg == 'grasp':
