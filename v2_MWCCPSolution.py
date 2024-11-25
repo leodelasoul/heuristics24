@@ -76,15 +76,9 @@ class v2_MWCCPSolution(PermutationSolution):
         sorted_V = sorted(V, key=lambda v: averages[v])
 
         # Step 3: resolve constraint violations
-        for v, v_prime in self.instance_c.items():
-            for v_prime in self.instance_c[v]:
-                if sorted_V.index(v) >= sorted_V.index(v_prime):
-                    # swap v and v_prime
-                    i = sorted_V.index(v)
-                    j = sorted_V.index(v_prime)
-                    sorted_V[i], sorted_V[j] = sorted_V[j], sorted_V[i]
-
-        self.x = np.array(sorted_V)
+        sorted_V = np.array(list(sorted_V)) - (self.inst.n+1)
+        sorted_V = self.check_order_constraints(sorted_V, construct=True)
+        self.x = sorted_V
         self.invalidate()
 
     # random construction heuristic
@@ -452,19 +446,20 @@ class v2_MWCCPSolution(PermutationSolution):
         return new_obj if new_obj < obj else obj
 
     # shaking methode for gvns
-    def shaking_swap(self, _par: Any, _result):
-        for _ in range(_par):
+    def shaking_swap(self, par: Any, _result):
+        for _ in range(par):
             a = random.randint(0, self.inst.n - 1)
             b = random.randint(0, self.inst.n - 1)
             if not self.is_constraint_valid(a,b):
                 continue
             else:
                 self.x[a], self.x[b] = self.x[b], self.x[a]
-                self.invalidate()
+
+        self.invalidate()
 
     # shaking methode for gvns
-    def shaking_shift(self, _par: Any, _result):
-        for _ in range(_par):
+    def shaking_shift(self, par: Any, _result):
+        for _ in range(par):
             order = np.arange(self.inst.n)
             p1, p2 = np.random.choice(order, 2, replace=False)
             original_order = order
@@ -482,14 +477,58 @@ class v2_MWCCPSolution(PermutationSolution):
 
             #change order of copy x
             self.x = np.array([self.x[idx] for idx in np.nditer(order)])
-            self.invalidate()
+        self.invalidate()
     
     #just take initial order as first construction heuristic (is not really used in grasp because construction is in loop)
     def construct_grasp(self, _par, _result):
         self.x = np.array(list(self.instance_v))
 
-    def random_greedy_construction(self, _par, _result):
-        self.construct_random(_par, _result) #should be implemented that it constructs solution with candidate list
+    def random_greedy_construction(self, alpha):
+        solution = []  # Final solution (permutation of V)
+        remaining_nodes = set(self.instance_v)  # Nodes to be added to the solution
+
+        while remaining_nodes:
+            # Step 1: Build the candidate list (CL)
+            candidate_list = list(remaining_nodes)
+
+            # Compute greedy values for all candidates (like deterministic construction: based on average position)
+            greedy_values = {}
+            for node in candidate_list:
+                edges_to_node = self.instance_adj_v[node]
+                if edges_to_node:
+                    total_position = sum(u for u in edges_to_node)
+                    greedy_values[node] = total_position / len(edges_to_node)
+                else:
+                    greedy_values[node] = float('inf')  # Less desirable if no edges
+
+            # Step 2: Determine threshold for the RCL
+            min_value = min(greedy_values.values())
+            max_value = max(greedy_values.values())
+            threshold = min_value + alpha * (max_value - min_value)
+
+            # Step 3: Build the RCL
+            restricted_candidate_list = [
+                node for node in candidate_list if greedy_values[node] <= threshold
+            ]
+
+            # Step 4: Select a candidate randomly from the RCL
+            selected_node = random.choice(restricted_candidate_list)
+
+            # Step 5: Add the selected node to the solution and update remaining nodes
+            solution.append(selected_node)
+            remaining_nodes.remove(selected_node)
+
+            # Step 6: Resolve any constraints (optional, based on your problem's requirements)
+            for constraint in self.instance_c.get(selected_node, []):
+                if constraint in remaining_nodes:
+                    remaining_nodes.remove(constraint)
+                    solution.append(constraint)
+
+        # Step 7: Update the solution
+        self.x = np.array(solution)
+        self.invalidate()
+        
+
 
     #use local search always on random solution
     def grasp(self, _par, _result):
