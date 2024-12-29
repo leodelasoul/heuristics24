@@ -10,25 +10,34 @@ from v2_MWCCPInstance import *
 from v2_MWCCPSolution import *
 
 DIRNAME = os.path.dirname(__file__)
-FILENAME: str = os.path.join(DIRNAME, 'test_instances/medium/inst_200_20_00001')
-FILENAME_COMPET: str = os.path.join(DIRNAME, 'competition_instances/inst_50_4_00001')
+FILENAME: str = os.path.join(DIRNAME, 'test_instances/small/inst_50_4_00001')
+FILENAME_COMPET_1: str = os.path.join(DIRNAME, 'competition_instances/inst_50_4_00001')
 FILENAME_COMPET_2: str = os.path.join(DIRNAME, 'competition_instances/inst_200_20_00001')
 FILENAME_COMPET_3: str = os.path.join(DIRNAME, 'competition_instances/inst_500_40_00003')
-FILENAME_COMPET_4: str = os.path.join(DIRNAME, 'competition_instances/inst_500_40_00021')
-FILENAME_COMPET_5: str = os.path.join(DIRNAME, 'test_instances/small/inst_50_4_00001')
+FILENAME_COMPET_4: str = os.path.join(DIRNAME, 'competition_instances/inst_500_40_00012')
+FILENAME_COMPET_5: str = os.path.join(DIRNAME, 'competition_instances/inst_500_40_00021')
 
+FILENAME_TEST_SMALL: str = os.path.join(DIRNAME, 'test_instances/small/inst_50_4_00003')
+FILENAME_TEST_MEDIUM: str = os.path.join(DIRNAME, 'test_instances/medium/inst_50_4_000010')
+FILENAME_TEST_MEDIUM_LARGE: str = os.path.join(DIRNAME, 'test_instances/medium_large/inst_500_40_00003')
+FILENAME_TEST_LARGE: str = os.path.join(DIRNAME, 'test_instances/large/inst_1000_60_00004')
+
+FILENAME_TUNING_SMALL: str = os.path.join(DIRNAME, 'competition_instances/inst_500_40_00003')
+FILENAME_TUNING_MEDIUM: str = os.path.join(DIRNAME, 'competition_instances/inst_500_40_00003')
+FILENAME_TUNING_MEDIUM_LARGE: str = os.path.join(DIRNAME, 'competition_instances/inst_500_40_00003')
+FILENAME_TUNING_LARGE: str = os.path.join(DIRNAME, 'competition_instances/inst_500_40_00003')
 # FILENAME_LARGE: str = os.path.join(DIRNAME, 'test_instances/la')
 if __name__ == '__main__':
     parser = get_settings_parser()
     parser.set_defaults(mh_titer=100) # number of iterations
-    parser.set_defaults(mh_ttime=120) # time limit
+    parser.set_defaults(mh_ttime=180) # time limit
 
     ###INIT
-    mWCCPInstance = v2_MWCCPInstance(FILENAME_COMPET_2)  # FILENAME
+    mWCCPInstance = v2_MWCCPInstance(FILENAME_COMPET_4)  # FILENAME
     mWCCPSolution = v2_MWCCPSolution(mWCCPInstance)
 
     ###Parser arguments
-    parser.add_argument("--alg", type=str, default='const_rand', help='optimization algorithm to be used '
+    parser.add_argument("--alg", type=str, default='const_det', help='optimization algorithm to be used '
                                                                 '(const_det, const_rand, ls, vnd, grasp, gvns, sa, ts)')
     parser.add_argument("--inst_file", type=str, default=mWCCPInstance,
                         help='problem instance file')
@@ -36,7 +45,7 @@ if __name__ == '__main__':
                         help='number of construction heuristics to be used')
     parser.add_argument("--meths_li", type=int, default=1,
                         help='number of local improvement methods to be used')
-    parser.add_argument("--meths_sh", type=int, default=5,
+    parser.add_argument("--meths_sh", type=int, default=1,
                         help='number of shaking methods to be used')
     
     #change manually for step function
@@ -58,14 +67,6 @@ if __name__ == '__main__':
 
     #util.text = "Initial probleminstance"
     #util.draw_instance(u=mWCCPSolution.instance_u, x=mWCCPSolution.x, w=mWCCPSolution.instance_w)
-    
-    #
-    # alg = GVNS(mWCCPSolution,
-    #            [Method(f"construct{i}", MWCCPSolution.construct, i) for i in range(settings.meths_ch)],
-    #            [Method(f"local-2opt{i}", MWCCPSolution.local_improve, i) for i in range(1, settings.meths_li + 1)],
-    #            [Method(f"sh{i}", MWCCPSolution.shaking, i) for i in range(1, settings.meths_sh + 1)],
-    #            None, False)
-    #
 
     if settings.alg == 'const_det':
         alg = GVNS(mWCCPSolution,
@@ -123,7 +124,12 @@ if __name__ == '__main__':
             else:
                 pass
     elif settings.alg == 'vnd':
-        pass
+        alg = GVNS(mWCCPSolution,
+                    [Method(f"construct{i}", v2_MWCCPSolution.construct, i) for i in range(settings.meths_ch)],
+                    [Method(f"local-2opt", v2_MWCCPSolution.ls_two_swap_best, 1),
+                     Method(f"local-1opt", v2_MWCCPSolution.ls_shift_best, 2)],
+                    [],
+                    None, False)
     elif settings.alg == 'grasp':
         alg = GVNS(mWCCPSolution,
                     [Method(f"construct{i}", v2_MWCCPSolution.construct_grasp, i) for i in range(settings.meths_ch)],
@@ -131,7 +137,13 @@ if __name__ == '__main__':
                     [],
                     None, False) 
     elif settings.alg == 'gvns':
-        pass
+        alg = GVNS(mWCCPSolution,
+                    [Method(f"construct{i}", v2_MWCCPSolution.construct, i) for i in range(settings.meths_ch)],
+                    [Method(f"local-2opt", v2_MWCCPSolution.ls_two_swap_best, 1),
+                     Method(f"local-1opt", v2_MWCCPSolution.ls_shift_best, 2)],
+                    [Method(f"shaking-2opt", v2_MWCCPSolution.shaking_swap, 1),
+                     Method(f"shaking-1opt", v2_MWCCPSolution.shaking_shift, 2)],
+                    None, False) 
     elif settings.alg == 'sa':
         pass
     elif settings.alg == 'ts':
