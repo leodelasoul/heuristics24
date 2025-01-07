@@ -1,11 +1,7 @@
 from typing import Dict
 
-import matplotlib.pyplot as plt
-import networkx as nx
 import numpy
 import numpy as np
-
-import util
 
 
 class v2_MWCCPInstance:
