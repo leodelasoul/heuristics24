@@ -1,11 +1,13 @@
 import logging
 import os
+from typing import List
 
 from pymhlib.demos.common import run_optimization
 from pymhlib.gvns import GVNS
 from pymhlib.log import init_logger
-from pymhlib.scheduler import Method
+from pymhlib.scheduler import Method, Scheduler
 from pymhlib.settings import parse_settings, settings, get_settings_parser, get_settings_as_str
+from pymhlib.solution import Solution
 from pymhlib.ssga import SteadyStateGeneticAlgorithm
 
 from exercise1.v2_MWCCPInstance import v2_MWCCPInstance
@@ -40,30 +42,19 @@ if __name__ == '__main__':
     init_logger()
     logger = logging.getLogger("pymhlib")
     logger.info("pymhlib demo for solving %s", "MWCCP")
-    logger.info(get_settings_as_str())
-    logger.info("%s instance read:\n%s", "MWCCP", str(v2_MWCCPInstance))
 
     ###INIT
     mWCCPInstance = v2_MWCCPInstance(FILENAME)
     mWCCPSolution = MWCCPSolutionEGA(mWCCPInstance)
-
+    settings.mh_pop_size = 2 #Init population size
+    settings.mh_pop_dupelim = False
     if settings.alg == 'ssga':
         alg = SteadyStateGeneticAlgorithm(mWCCPSolution,
-                                          [Method("ch{i}", mWCCPSolution.construct, i) for i in
-                                           range(settings.meths_ch)],
+                                          [Method("ch{i}", mWCCPSolution.construct, i) for i in range(settings.meths_ch)],
                                           mWCCPSolution.crossover,
                                           Method("mu", mWCCPSolution.shaking, 1),
-                                          Method("ls", mWCCPSolution.local_improve, 1),
-                                          None)
-
-
-
-    #
-    # if settings.alg == 'ssga':
-    # alg = SteadyStateGeneticAlgorithm(solution,
-    #                                   [Method("ch{i}", mWCCPSolution.construct, i) for i in
-    #                                    range(settings.meths_ch)],
-    #                                   mWCCPSolution.crossover,
-    #                                   Method("mu", mWCCPSolution.shaking, 1),
-    #                                   Method("ls", mWCCPSolution.local_improve, 1),
-    #                                   own_settings)
+                                          Method("ls", mWCCPSolution.local_improve, 1))
+        alg.run()
+        logger.info("")
+        alg.method_statistics()
+        alg.main_results()
