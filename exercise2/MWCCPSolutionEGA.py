@@ -46,11 +46,24 @@ class MWCCPSolutionEGA(PermutationSolution, ABC):
         return x
 
     def crossover(self, parent1, parent2):
-        cross_over_point = random.randint(0, self.inst.n)
-        child1 = np.append(parent1.x[0:cross_over_point],  parent2.x[cross_over_point:])
-        child2 = np.append(parent2.x[0:cross_over_point], parent1.x[cross_over_point:])
-        return child1,child2
+        crossover_point = random.randint(0, self.inst.n)
+        child1 = np.concatenate((parent1.x[:crossover_point], parent2.x[crossover_point:]))
+        child2 = np.concatenate((parent2.x[:crossover_point], parent1.x[crossover_point:]))
+        def fix_duplicates(child, parent):
+            unique_values = set(child)
+            missing_values = [val for val in parent if val not in unique_values]
+            seen = set()
+            for i in range(len(child)):
+                if child[i] in seen:
+                    # Replace duplicate with a missing value
+                    child[i] = missing_values.pop(0)
+                seen.add(child[i])
+            return child
 
+        child1 = fix_duplicates(child1, parent1.x)
+        child2 = fix_duplicates(child2, parent2.x)
+
+        return child1, child2
     def shaking(self, _sol, _par, _res):
 
         pass

@@ -123,7 +123,7 @@ class GeneticAlgorithm(Scheduler):
 
 if __name__ == '__main__':
     parser = get_settings_parser()
-    parser.set_defaults(mh_titer=100) # number of iterations
+    parser.set_defaults(mh_titer=10) # number of iterations
     parser.set_defaults(mh_ttime=180) # time limit
 
     parser = get_settings_parser()
@@ -151,7 +151,7 @@ if __name__ == '__main__':
     ###INIT
     mWCCPInstance = v2_MWCCPInstance(FILENAME)
     mWCCPSolution = MWCCPSolutionEGA(mWCCPInstance)
-    settings.mh_pop_size = 100 #Init population size
+    settings.mh_pop_size = 10 #Init population size
     settings.mh_pop_dupelim = False
     settings.mh_ssga_cross_prob = 1
     settings.mh_ssga_loc_prob = 0.1
