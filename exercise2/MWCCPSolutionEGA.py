@@ -1,3 +1,4 @@
+import random
 from abc import ABC
 
 import numpy as np
@@ -9,8 +10,10 @@ import sys
 class MWCCPSolutionEGA(PermutationSolution, ABC):
     to_maximize = False
 
+    x = []
     def __init__(self, inst: v2_MWCCPInstance):
-        super().__init__(len(inst.get_instance()["u"]), init=False, inst=inst)
+        super().__init__(len(inst.get_instance()["v"]), init=True, inst=inst)
+        self.x = inst.get_instance()["v"]
         self.instance_c_tup = inst.get_instance()["c_tup"]
         self.prior_obj_val = sys.maxsize
         self.instance_c = inst.get_instance()["c"]
@@ -18,6 +21,7 @@ class MWCCPSolutionEGA(PermutationSolution, ABC):
 
     def copy(self):
         sol = MWCCPSolutionEGA(self.inst)
+        sol.x = self.x
         sol.copy_from(self)
         return sol
 
@@ -39,15 +43,20 @@ class MWCCPSolutionEGA(PermutationSolution, ABC):
         if self.is_better_obj(current_obj_val, self.prior_obj_val):
             self.obj_val = current_obj_val
         self.prior_obj_val = self.calc_objective()
-        print(self.prior_obj_val)
+        return x
 
-    def crossover(self, _par1, _par2): #GA RECOMBINE STEP
-        pass
+    def crossover(self, parent1, parent2):
+        cross_over_point = random.randint(0, self.inst.n)
+        child1 = np.append(parent1.x[0:cross_over_point],  parent2.x[cross_over_point:])
+        child2 = np.append(parent2.x[0:cross_over_point], parent1.x[cross_over_point:])
+        return child1,child2
 
     def shaking(self, _sol, _par, _res):
+
         pass
 
     def local_improve(self, _sol, _par, _res): #GA REPLACE STEP
+
         pass
 
 
@@ -80,4 +89,6 @@ class MWCCPSolutionEGA(PermutationSolution, ABC):
                 if list(self.x).index(node) >= list(self.x).index(v_prime):
                     return False
                 else:
-                    raise ValueError(f"Constraint {node} {v_prime} violated.")
+                    self.x = [] #disregard current solution
+                    return
+                    #raise ValueError(f"Constraint {node} {v_prime} violated.")
