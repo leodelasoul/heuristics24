@@ -118,4 +118,3 @@ class v2_MWCCPInstance:
         self.n = U_size
 
         self.instance = {"u": U_vector, "v": V_vector, "c": constraint_dict, "w": weight_matrix, "edges": edges, "c_tup": constraints, "adj_v": adjacency_from_V, "n": U_size}
-
