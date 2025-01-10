@@ -22,56 +22,71 @@ class MMAS:
         self.rho = params["rho"]
         self.num_ants = params["num_ants"]
         self.num_iterations = params["num_iterations"]
-        self.tau_min = params["tau_min"]
-        self.tau_max = params["tau_max"]
-        self.pheromones = {edge: self.tau_max for edge in edges}
+        self.p = params.get("p", 0.05)  # Tuning parameter for tau_min
+        self.reinit_threshold = params.get("reinit_threshold", 20)
+        self.pheromones = {edge: 1.0 for edge in edges}  # Initialized to 1.0
+        self.best_cost = float('inf')
+        self.best_solution = None
+        self.stagnation_counter = 0
+
+    def _calculate_tau_bounds(self):
+        # Update tau_max and tau_min dynamically
+        tau_max = 1 / ((1 - self.rho) * self.best_cost)
+        tau_min = tau_max * (1 - self.p ** (1 / len(self.V))) / ((len(self.V) / 2 - 1) * self.p ** (1 / len(self.V)))
+        return tau_min, tau_max
+
+    def _update_pheromones(self, iteration_best_solution, iteration_best_cost):
+        tau_min, tau_max = self._calculate_tau_bounds()
+
+        # Evaporate pheromones
+        for edge in self.pheromones:
+            self.pheromones[edge] *= (1 - self.rho)
+            self.pheromones[edge] = max(self.pheromones[edge], tau_min)
+
+        # Deposit pheromones for the iteration-best solution
+        for v in iteration_best_solution:
+            for u in self.U:
+                if (u, v) in self.edges:
+                    self.pheromones[(u, v)] += 1 / iteration_best_cost
+                    self.pheromones[(u, v)] = min(self.pheromones[(u, v)], tau_max)
+
+    def _reinitialize_pheromones(self):
+        tau_max = 1 / ((1 - self.rho) * self.best_cost)
+        self.pheromones = {edge: tau_max for edge in self.edges}
+        logging.info("Pheromones reinitialized due to stagnation.")
 
     def run(self):
-        global_best_solution = None
-        global_best_cost = float('inf')
-
         for iteration in range(self.num_iterations):
-            
             ants = [Ant(self.U, self.V, self.constraints, self.edges, self.pheromones, self.alpha, self.beta) for _ in range(self.num_ants)]
-
+            
             iteration_best_solution = None
             iteration_best_cost = float('inf')
-            costs = []
 
             for ant in ants:
                 ant.construct_solution()
-                costs.append(ant.cost)
                 if ant.cost < iteration_best_cost and ant.cost != float('inf'):
                     iteration_best_solution = ant.solution
                     iteration_best_cost = ant.cost
 
-            if iteration_best_solution is not None and iteration_best_cost < global_best_cost:
-                global_best_solution = iteration_best_solution
-                global_best_cost = iteration_best_cost
+            # Update global best if better solution is found
+            if iteration_best_cost < self.best_cost:
+                self.best_cost = iteration_best_cost
+                self.best_solution = iteration_best_solution
+                self.stagnation_counter = 0
+            else:
+                self.stagnation_counter += 1
 
-            if global_best_solution is not None:
-                self._update_pheromones(global_best_solution, global_best_cost)
+            # Update pheromones if a feasible solution exists
+            if iteration_best_solution is not None:
+                self._update_pheromones(iteration_best_solution, iteration_best_cost)
 
-            avg_cost = sum(costs) / len(costs)
+            # Reinitialize pheromones if stagnation occurs
+            if self.stagnation_counter >= self.reinit_threshold:
+                self._reinitialize_pheromones()
+                self.stagnation_counter = 0
+
             # Log progress every 10 iterations
             if (iteration + 1) % 10 == 0:
-                logging.info(f"Iteration {iteration + 1}/{self.num_iterations}")
-                logging.info(
-                    f"Iteration {iteration + 1}: Best cost: {iteration_best_cost}, "
-                    f"Avg cost: {avg_cost}, Global best cost: {global_best_cost}"
-                )
+                logging.info(f"Iteration {iteration + 1}: Current Best Sol: {iteration_best_cost}, Best cost: {self.best_cost}")
 
-        return global_best_solution, global_best_cost
-
-    def _update_pheromones(self, best_solution, best_cost):
-        # Evaporation
-        for edge in self.pheromones:
-            self.pheromones[edge] *= (1 - self.rho)
-            self.pheromones[edge] = max(self.pheromones[edge], self.tau_min)
-
-        # Deposit pheromones for the best solution
-        for v in best_solution:
-            for u in self.U:
-                if (u, v) in self.edges:
-                    self.pheromones[(u, v)] += 1 / best_cost
-                    self.pheromones[(u, v)] = min(self.pheromones[(u, v)], self.tau_max)
+        return self.best_solution, self.best_cost

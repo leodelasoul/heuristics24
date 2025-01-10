@@ -19,11 +19,11 @@ def main(input_file, output_file):
     params = {
         "alpha": 1.0,          # Influence of pheromone
         "beta": 2.0,           # Influence of heuristic
-        "rho": 0.3,            # Evaporation rate
+        "rho": 0.1,            # Evaporation rate
         "num_ants": 10,        # Number of ants
-        "num_iterations": 1000, # Maximum iterations
-        "tau_min": 0.1,        # Minimum pheromone
-        "tau_max": 5.0,        # Maximum pheromone
+        "num_iterations": 10000, # Max iterations
+        "initial_tau": 5.0,    # Initial pheromone level
+        "reinit_threshold": 15 # Stagnation threshold
     }
 
     # Initialize MMAS solver
