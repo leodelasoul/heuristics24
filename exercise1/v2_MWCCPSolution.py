@@ -87,10 +87,10 @@ class v2_MWCCPSolution(PermutationSolution):
         np.random.shuffle(order)
         x = self.check_order_constraints(order, construct=True)
         self.x = x
-        current_obj_val = self.calc_objective()
-        if self.is_better_obj(current_obj_val, self.prior_obj_val):
-            self.obj_val = current_obj_val
-        self.prior_obj_val = self.calc_objective()
+        # current_obj_val = self.calc_objective()
+        # if self.is_better_obj(current_obj_val, self.prior_obj_val):
+        #     self.obj_val = current_obj_val
+        # self.prior_obj_val = self.calc_objective()
 
     # check if new order is valid
     def check_order_constraints(self, order, construct):

@@ -18,7 +18,12 @@ from exercise1.v2_MWCCPInstance import v2_MWCCPInstance
 from MWCCPSolutionEGA import MWCCPSolutionEGA
 
 DIRNAME = os.path.dirname(__file__)
-FILENAME: str = os.path.join(DIRNAME, '../test_instances/small/inst_50_4_00001')
+
+FILENAME: str = os.path.join(DIRNAME, '../competition_instances/inst_50_4_00001')
+FILENAME1: str = os.path.join(DIRNAME, '../test_instances/small/inst_50_4_00001')
+FILENAME_MED: str = os.path.join(DIRNAME, '../test_instances/medium/inst_200_20_00001')
+FILENAME_LARGE: str = os.path.join(DIRNAME, '../test_instances/medium_large/inst_500_40_00001')
+FILENAME_LARGE1: str = os.path.join(DIRNAME, '../test_instances/large/inst_1000_60_00001')
 
 class MyPopulation(Population):
     def __new__(cls, sol: Solution, meths_ch: List[Method], own_settings: dict = None):
@@ -72,7 +77,7 @@ class GeneticAlgorithm(Scheduler):
         self.meth_mu = meth_mu
         self.meth_ls = meth_li
 
-        self.incumbent = self.population[random.randint(0,self.population.size)]
+        self.incumbent = self.population[random.randint(0,self.population.size)-1]
 
     def run(self):
         population = self.population
@@ -112,8 +117,8 @@ class GeneticAlgorithm(Scheduler):
 
             # Update best solution
             if p1.is_better(self.incumbent):
-                self.incumbent = p1
-
+                # self.incumbent = p1
+                self.incumbent.copy_from(p1)
 
     def perform_methods(self, methods: List[Method], sol: Solution) -> Result:
         res = Result()
@@ -140,15 +145,14 @@ class GeneticAlgorithm(Scheduler):
         return res
 
 
-
 if __name__ == '__main__':
     parser = get_settings_parser()
     parser.set_defaults(mh_titer=100) # number of iterations
-    parser.set_defaults(mh_ttime=180) # time limit
+    parser.set_defaults(mh_ttime=1800) # time limit
 
     parser = get_settings_parser()
     parser.add_argument("--alg", type=str, default='ssga', help='optimization algorithm to be used')
-    parser.add_argument("--inst_file", type=str, default=FILENAME,
+    parser.add_argument("--inst_file", type=str, default=FILENAME1,
                         help='problem instance file')
     parser.add_argument("--meths_ch", type=int, default=1,
                         help='number of construction heuristics to be used')
@@ -166,15 +170,15 @@ if __name__ == '__main__':
 
     init_logger()
     logger = logging.getLogger("pymhlib")
-    logger.info("pymhlib demo for solving %s", "MWCCP")
+    logger.info("pymhlib demo for solving MWCCP")
 
     ###INIT
-    mWCCPInstance = v2_MWCCPInstance(FILENAME)
+    mWCCPInstance = v2_MWCCPInstance(FILENAME1)
     mWCCPSolution = MWCCPSolutionEGA(mWCCPInstance)
-    settings.mh_pop_size = 1000 #Init population size
+    settings.mh_pop_size = 500 #Init population size
     settings.mh_pop_dupelim = False
-    settings.mh_ssga_cross_prob = 1
-    settings.mh_ssga_loc_prob = 0.1
+    settings.mh_ssga_cross_prob = 1 # whether to use crossover , kinda useless
+    settings.mh_ssga_loc_prob = 0.1 # whether to use local search
 
     if settings.alg == 'ssga':
         alg = GeneticAlgorithm(mWCCPSolution,

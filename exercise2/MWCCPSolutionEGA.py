@@ -26,7 +26,8 @@ class MWCCPSolutionEGA(PermutationSolution, ABC):
         return sol
 
     def copy_from(self, sol):
-        self.x = sol.x
+        super().copy_from(sol)
+        #self.x = sol.x
 
 
     def calc_objective(self):
@@ -65,8 +66,9 @@ class MWCCPSolutionEGA(PermutationSolution, ABC):
 
         child1 = replace_duplicates(child1, parent1.x)
         child2 = replace_duplicates(child2, parent2.x) # if child2  is needed
+        child1 = self.check_order_constraints(child1, construct=True)
         self.x = child1
-        return self.x.copy()
+        return self.x
 
     def shaking(self, _sol, _par, _res): # GA mutate step
         for _ in range(_par):
@@ -76,7 +78,8 @@ class MWCCPSolutionEGA(PermutationSolution, ABC):
                 continue
             else:
                 self.x[a], self.x[b] = self.x[b], self.x[a]
-                return self.x.copy()
+                return self.x
+
 
     def local_improve(self, _sol, _par, _res): #GA Local Search // optional
 
@@ -84,12 +87,31 @@ class MWCCPSolutionEGA(PermutationSolution, ABC):
 
 
     def check_order_constraints(self, order, construct):
-        # Repeat until all constraints are satisfied
-        swapped = True
         constraint_pairs = self.instance_c_tup
-        arr = np.array([self.x[i] for i in np.nditer(order)])
-        while swapped:
+        arr = np.array([self.x[abs(i - self.inst.n) - 1] for i in np.nditer(order)])
+        invalid_constraints = []
+
+        # Collect all invalid constraints
+        for a, b in constraint_pairs:
+            indices_a = np.where(arr == a)[0]
+            indices_b = np.where(arr == b)[0]
+            if indices_a.size == 0 or indices_b.size == 0:
+                continue
+            index_a = indices_a[0]
+            index_b = indices_b[0]
+            if index_a > index_b:
+                invalid_constraints.append((index_a, index_b))
+
+        # Resolve all invalid constraints
+        while invalid_constraints:
             swapped = False
+            for index_a, index_b in invalid_constraints:
+                arr[index_a], arr[index_b] = arr[index_b], arr[index_a]
+                order[index_a], order[index_b] = order[index_b], order[index_a]
+                swapped = True
+
+            # Re-check constraints after swapping
+            invalid_constraints = []
             for a, b in constraint_pairs:
                 indices_a = np.where(arr == a)[0]
                 indices_b = np.where(arr == b)[0]
@@ -98,24 +120,24 @@ class MWCCPSolutionEGA(PermutationSolution, ABC):
                 index_a = indices_a[0]
                 index_b = indices_b[0]
                 if index_a > index_b:
-                    arr[index_a], arr[index_b] = arr[index_b], arr[index_a]
-                    order[index_a], order[index_b] = order[index_b], order[index_a]
-                    swapped = True
-        x = np.array([self.x[i] for i in np.nditer(order)])
+                    invalid_constraints.append((index_a, index_b))
+
+            if not swapped:
+                break
+
+        x = np.array([self.x[abs(i - self.inst.n) - 1] for i in np.nditer(order)])
         if construct:
             return x
         return order
 
     def check(self):
+        x = self.x
         for node, constraint_nodes in self.instance_c.items():
             for v_prime in self.instance_c[node]:
-                if list(self.x).index(node) >= list(self.x).index(v_prime):
-                    return False
-                else:
-                    #raise ValueError(f"Constraint {node} {v_prime} violated.")
+                if list(x).index(node) >= list(x).index(v_prime):
+                    raise ValueError(f"Constraint {node} {v_prime} violated.")
 
-                    self.x = [] #disregard current solution
-                    return
+
     def is_constraint_valid(self, p1, p2):
         x = self.x
         first = x[p1]
