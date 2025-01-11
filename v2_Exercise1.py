@@ -33,7 +33,7 @@ if __name__ == '__main__':
     parser.set_defaults(mh_ttime=180) # time limit
 
     ###INIT
-    mWCCPInstance = v2_MWCCPInstance(FILENAME_COMPET_4)  # FILENAME
+    mWCCPInstance = v2_MWCCPInstance(FILENAME_COMPET_1)  # FILENAME
     mWCCPSolution = v2_MWCCPSolution(mWCCPInstance)
 
     ###Parser arguments

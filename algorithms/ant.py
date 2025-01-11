@@ -1,11 +1,17 @@
 import random
 
 class Ant:
-    def __init__(self, U, V, constraints, edges, pheromones, alpha, beta):
-        self.U = U
-        self.V = V
-        self.constraints = constraints
-        self.edges = edges
+    def __init__(self, instance, pheromones, alpha, beta):
+        """
+        Initialize the Ant with problem instance data.
+
+        Args:
+            instance (MWCCPInstance): Problem instance object.
+            pheromones (dict): Current pheromone levels.
+            alpha (float): Influence of pheromone.
+            beta (float): Influence of heuristic.
+        """
+        self.instance = instance
         self.pheromones = pheromones
         self.alpha = alpha
         self.beta = beta
@@ -13,7 +19,11 @@ class Ant:
         self.cost = float('inf')
 
     def construct_solution(self):
-        available_nodes = list(self.V)
+        """
+        Constructs a solution by iteratively selecting nodes from V based on pheromone
+        and heuristic information.
+        """
+        available_nodes = list(self.instance.V)
         self.solution = []
 
         while available_nodes:
@@ -22,6 +32,8 @@ class Ant:
             self.solution.append(chosen)
             available_nodes.remove(chosen)
 
+        
+
         if self._is_feasible():
             self.cost = self._calculate_cost()
 
@@ -29,24 +41,28 @@ class Ant:
         probabilities = []
         for v in available_nodes:
             prob = sum(
-                (self.pheromones[(u, v)] ** self.alpha) * (1 / self.edges[(u, v)]) ** self.beta
-                for u in self.U if (u, v) in self.edges
+                (self.pheromones.get((u, v), 0) ** self.alpha) * (1 / self.instance.edges[(u, v)]) ** self.beta
+                for u in self.instance.U if (u, v) in self.pheromones
             )
             probabilities.append(prob)
+        
         total = sum(probabilities)
+        if total == 0:
+            # Assign equal probability if all pheromone and heuristic values are zero
+            return [1 / len(available_nodes)] * len(available_nodes)
+        
+        # Normalize probabilities
         return [p / total for p in probabilities]
+
 
     def _is_feasible(self):
         pos = {v: i for i, v in enumerate(self.solution)}
-        return all(pos[v1] < pos[v2] for v1, v2 in self.constraints)
+        return all(pos[v1] < pos[v2] for v1, v2 in self.instance.constraints)
 
     def _calculate_cost(self):
         cost = 0
-        edges_list = list(self.edges.keys())
-        for i in range(len(edges_list)):
-            for j in range(i + 1, len(edges_list)):
-                (u1, v1) = edges_list[i]
-                (u2, v2) = edges_list[j]
-                if u1 < u2 and self.solution.index(v1) > self.solution.index(v2):
-                    cost += self.edges[(u1, v1)] + self.edges[(u2, v2)]
+        for i in range(len(self.solution)):
+            for j in range(i + 1, len(self.solution)):
+                v1, v2 = self.solution[i], self.solution[j]
+                cost += self.instance.get_crossing_contribution(v1, v2)
         return cost

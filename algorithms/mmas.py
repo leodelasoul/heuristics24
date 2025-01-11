@@ -12,11 +12,8 @@ logging.basicConfig(
 )
 
 class MMAS:
-    def __init__(self, U, V, constraints, edges, params):
-        self.U = U
-        self.V = V
-        self.constraints = constraints
-        self.edges = edges
+    def __init__(self, instance, params):
+        self.instance = instance
         self.alpha = params["alpha"]
         self.beta = params["beta"]
         self.rho = params["rho"]
@@ -24,7 +21,7 @@ class MMAS:
         self.num_iterations = params["num_iterations"]
         self.p = params.get("p", 0.05)  # Tuning parameter for tau_min
         self.reinit_threshold = params.get("reinit_threshold", 20)
-        self.pheromones = {edge: 1.0 for edge in edges}  # Initialized to 1.0
+        self.pheromones = {edge: 1.0 for edge in instance.edges}
         self.best_cost = float('inf')
         self.best_solution = None
         self.stagnation_counter = 0
@@ -32,7 +29,7 @@ class MMAS:
     def _calculate_tau_bounds(self):
         # Update tau_max and tau_min dynamically
         tau_max = 1 / ((1 - self.rho) * self.best_cost)
-        tau_min = tau_max * (1 - self.p ** (1 / len(self.V))) / ((len(self.V) / 2 - 1) * self.p ** (1 / len(self.V)))
+        tau_min = tau_max * (1 - self.p ** (1 / len(self.instance.V))) / ((len(self.instance.V) / 2 - 1) * self.p ** (1 / len(self.instance.V)))
         return tau_min, tau_max
 
     def _update_pheromones(self, iteration_best_solution, iteration_best_cost):
@@ -45,23 +42,23 @@ class MMAS:
 
         # Deposit pheromones for the iteration-best solution
         for v in iteration_best_solution:
-            for u in self.U:
-                if (u, v) in self.edges:
+            for u in self.instance.U:
+                if (u, v) in self.pheromones:
                     self.pheromones[(u, v)] += 1 / iteration_best_cost
                     self.pheromones[(u, v)] = min(self.pheromones[(u, v)], tau_max)
 
     def _reinitialize_pheromones(self):
         tau_max = 1 / ((1 - self.rho) * self.best_cost)
-        self.pheromones = {edge: tau_max for edge in self.edges}
+        self.pheromones = {edge: tau_max for edge in self.instance.edges}
         logging.info("Pheromones reinitialized due to stagnation.")
 
     def run(self):
         for iteration in range(self.num_iterations):
-            ants = [Ant(self.U, self.V, self.constraints, self.edges, self.pheromones, self.alpha, self.beta) for _ in range(self.num_ants)]
+            ants = [Ant(self.instance, self.pheromones, self.alpha, self.beta) for _ in range(self.num_ants)]
             
             iteration_best_solution = None
             iteration_best_cost = float('inf')
-
+        
             for ant in ants:
                 ant.construct_solution()
                 if ant.cost < iteration_best_cost and ant.cost != float('inf'):

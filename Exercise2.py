@@ -1,7 +1,7 @@
 import sys
 import os
 from algorithms.mmas import MMAS
-from algorithms.utils import parse_input
+from algorithms.utils import MWCCPInstance
 
 DIRNAME = os.path.dirname(__file__)
 FILENAME: str = os.path.join(DIRNAME, 'test_instances/small/inst_50_4_00001')
@@ -13,7 +13,7 @@ FILENAME_COMPET_5: str = os.path.join(DIRNAME, 'competition_instances/inst_500_4
 
 def main(input_file, output_file):
     # Parse the problem instance
-    U, V, constraints, edges = parse_input(input_file)
+    instance = MWCCPInstance(input_file)
 
     # Parameters for MMAS
     params = {
@@ -21,13 +21,13 @@ def main(input_file, output_file):
         "beta": 2.0,           # Influence of heuristic
         "rho": 0.1,            # Evaporation rate
         "num_ants": 10,        # Number of ants
-        "num_iterations": 10000, # Max iterations
+        "num_iterations": 1000, # Max iterations
         "initial_tau": 5.0,    # Initial pheromone level
         "reinit_threshold": 15 # Stagnation threshold
     }
 
     # Initialize MMAS solver
-    solver = MMAS(U, V, constraints, edges, params)
+    solver = MMAS(instance, params)
 
     # Solve the MWCCP instance
     best_solution, best_cost = solver.run()
@@ -40,7 +40,7 @@ def main(input_file, output_file):
 
 if __name__ == "__main__":
     if len(sys.argv) != 3:
-        main(FILENAME_COMPET_1, "mmas_out")
+        main(FILENAME_COMPET_2, "mmas_out")
         #print("Usage: python main.py <input_file> <output_file>")
     else:
         main(sys.argv[1], sys.argv[2])

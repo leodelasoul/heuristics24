@@ -16,6 +16,7 @@ class v2_MWCCPSolution(PermutationSolution):
     instance_c_tup: list[(int, int)]
     instance_adj_v: dict[int, set[int]]
     instance_edges: list[(int, int, int)]
+    instance_crossing_contrib: dict[(int, int), int]
 
     to_maximize = False
     random_order = False
@@ -34,6 +35,7 @@ class v2_MWCCPSolution(PermutationSolution):
         self.instance_adj_v = inst.get_instance()["adj_v"]
         self.instance_c = inst.get_instance()["c"]
         self.instance_c_tup = inst.get_instance()["c_tup"]
+        self.instance_crossing_contrib = inst.get_instance()["crossing_contrib"]
         inst.n = len(self.instance_v)
 
         self.instance_edges = inst.get_instance()["edges"]
@@ -53,10 +55,31 @@ class v2_MWCCPSolution(PermutationSolution):
     def calc_objective(self):
         objective_value = 0
         position = {v: i for i, v in enumerate(self.x)}
-        for (u1, v1, weight) in self.instance_edges:
-            for (u2, v2, weights) in self.instance_edges:
-                if u1 < u2 and position[v1] > position[v2]:
-                    objective_value += weight + weights
+        vertices = list(self.instance_v)
+        print(vertices)
+        for v1 in self.instance_v:
+            for v2 in self.instance_v:
+                pos_v1 = position[v1]
+                pos_v2 = position[v2]
+                if pos_v1 == pos_v2:
+                    continue
+                if pos_v1 < pos_v2: #only check edges once, we iterate over all edges
+                    objective_value += self.instance_crossing_contrib[(v1,v2)]
+
+        # Iterate over all unique pairs (upper triangular traversal)
+        # for i in range(len(vertices)):
+        #     v1 = vertices[i]
+        #     for j in range(i + 1, len(vertices)):  # Start the inner loop after the current index
+        #         v2 = vertices[j]
+        #         print(v1, v2)
+        #         pos_v1 = position[v1]
+        #         pos_v2 = position[v2]
+
+        #         if pos_v1 < pos_v2:
+        #             objective_value += self.instance_edge_crossing[(v1, v2)]
+        #         else:
+        #             objective_value += self.instance_edge_crossing[(v2, v1)]
+
         return objective_value
     
     #deterministic construction heuristic
