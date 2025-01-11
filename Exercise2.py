@@ -2,6 +2,7 @@ import sys
 import os
 from algorithms.mmas import MMAS
 from algorithms.utils import MWCCPInstance
+from algorithms.smac_tuning import run_smac_tuning
 
 DIRNAME = os.path.dirname(__file__)
 FILENAME: str = os.path.join(DIRNAME, 'test_instances/small/inst_50_4_00001')
@@ -11,32 +12,43 @@ FILENAME_COMPET_3: str = os.path.join(DIRNAME, 'competition_instances/inst_500_4
 FILENAME_COMPET_4: str = os.path.join(DIRNAME, 'competition_instances/inst_500_40_00012')
 FILENAME_COMPET_5: str = os.path.join(DIRNAME, 'competition_instances/inst_500_40_00021')
 
-def main(input_file, output_file):
-    # Parse the problem instance
-    instance = MWCCPInstance(input_file)
+def main(input_file, output_file, tuning=False):
+        
+    if tuning:
+        # Specify the base directory and subfolders for tuning
+        base_dir = "tuning_instances"
+        subfolders = ["small", "medium", "medium_large", "large"]
 
-    # Parameters for MMAS
-    params = {
-        "alpha": 1.0,          # Influence of pheromone
-        "beta": 2.0,           # Influence of heuristic
-        "rho": 0.1,            # Evaporation rate
-        "num_ants": 10,        # Number of ants
-        "num_iterations": 1000, # Max iterations
-        "initial_tau": 5.0,    # Initial pheromone level
-        "reinit_threshold": 15 # Stagnation threshold
-    }
+        # Run parameter tuning with a time limit
+        results = run_smac_tuning(base_dir, subfolders, time_limit_per_instance=600, time_limit_per_run=60)
+        for instance_file, best_config in results.items():
+            print(f"Best configuration for {instance_file}: {best_config}")
+    else:
+        # Parse the problem instance
+        instance = MWCCPInstance(input_file)
 
-    # Initialize MMAS solver
-    solver = MMAS(instance, params)
+        # Parameters for MMAS
+        params = {
+            "alpha": 2.0,          # Influence of pheromone
+            "beta": 2.0,           # Influence of heuristic
+            "rho": 0.1,            # Evaporation rate
+            "num_ants": 40,        # Number of ants
+            "num_iterations": 400, # Max iterations
+            "initial_tau": 5.0,    # Initial pheromone level
+            "reinit_threshold": 15 # Stagnation threshold
+        }
 
-    # Solve the MWCCP instance
-    best_solution, best_cost = solver.run()
+        # Initialize MMAS solver
+        solver = MMAS(instance, params)
 
-    # Output the solution
-    with open(output_file, "w") as f:
-        f.write(os.path.basename(input_file) + "\n")
-        f.write(" ".join(map(str, best_solution)) + "\n")
-        f.write(f"Cost: {best_cost}\n")
+        # Solve the MWCCP instance
+        best_solution, best_cost = solver.run()
+
+        # Output the solution
+        with open(output_file, "w") as f:
+            f.write(os.path.basename(input_file) + "\n")
+            f.write(" ".join(map(str, best_solution)) + "\n")
+            f.write(f"Cost: {best_cost}\n")
 
 if __name__ == "__main__":
     if len(sys.argv) != 3:

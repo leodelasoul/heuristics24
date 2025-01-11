@@ -21,6 +21,7 @@ class MMAS:
         self.num_iterations = params["num_iterations"]
         self.p = params.get("p", 0.05)  # Tuning parameter for tau_min
         self.reinit_threshold = params.get("reinit_threshold", 20)
+        #pheromone level on edge (i,j) (slides)
         self.pheromones = {edge: 1.0 for edge in instance.edges}
         self.best_cost = float('inf')
         self.best_solution = None

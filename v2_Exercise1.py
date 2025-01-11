@@ -29,15 +29,15 @@ FILENAME_TUNING_LARGE: str = os.path.join(DIRNAME, 'competition_instances/inst_5
 # FILENAME_LARGE: str = os.path.join(DIRNAME, 'test_instances/la')
 if __name__ == '__main__':
     parser = get_settings_parser()
-    parser.set_defaults(mh_titer=100) # number of iterations
-    parser.set_defaults(mh_ttime=180) # time limit
+    parser.set_defaults(mh_titer=10000) # number of iterations
+    parser.set_defaults(mh_ttime=300) # time limit
 
     ###INIT
-    mWCCPInstance = v2_MWCCPInstance(FILENAME_COMPET_1)  # FILENAME
+    mWCCPInstance = v2_MWCCPInstance(FILENAME_COMPET_3)  # FILENAME
     mWCCPSolution = v2_MWCCPSolution(mWCCPInstance)
 
     ###Parser arguments
-    parser.add_argument("--alg", type=str, default='const_det', help='optimization algorithm to be used '
+    parser.add_argument("--alg", type=str, default='ls', help='optimization algorithm to be used '
                                                                 '(const_det, const_rand, ls, vnd, grasp, gvns, sa, ts)')
     parser.add_argument("--inst_file", type=str, default=mWCCPInstance,
                         help='problem instance file')
@@ -49,7 +49,7 @@ if __name__ == '__main__':
                         help='number of shaking methods to be used')
     
     #change manually for step function
-    parser.add_argument("--meths_ls_step", type=str, default='best',
+    parser.add_argument("--meths_ls_step", type=str, default='random',
                         help='which step function should be used for local search'
                         '(first, best, random)')
     #change manually for move function

@@ -23,6 +23,7 @@ class v2_MWCCPSolution(PermutationSolution):
     x = None
     w = list[list[int]]
     prior_obj_val = sys.maxsize
+    best_sol_found = None
 
     #neighborhood index for VND
     vnd_neighborhood_index = 0
@@ -117,12 +118,31 @@ class v2_MWCCPSolution(PermutationSolution):
 
     # check if new order is valid
     def check_order_constraints(self, order, construct):
-        # Repeat until all constraints are satisfied
-        swapped = True
         constraint_pairs = self.instance_c_tup
         arr = np.array([self.x[i] for i in np.nditer(order)])
-        while swapped:
+        invalid_constraints = []
+
+        # Collect all invalid constraints
+        for a, b in constraint_pairs:
+            indices_a = np.where(arr == a)[0]
+            indices_b = np.where(arr == b)[0]
+            if indices_a.size == 0 or indices_b.size == 0:
+                continue
+            index_a = indices_a[0]
+            index_b = indices_b[0]
+            if index_a > index_b:
+                invalid_constraints.append((index_a, index_b))
+
+        # Resolve all invalid constraints
+        while invalid_constraints:
             swapped = False
+            for index_a, index_b in invalid_constraints:
+                arr[index_a], arr[index_b] = arr[index_b], arr[index_a]
+                order[index_a], order[index_b] = order[index_b], order[index_a]
+                swapped = True
+
+            # Re-check constraints after swapping
+            invalid_constraints = []
             for a, b in constraint_pairs:
                 indices_a = np.where(arr == a)[0]
                 indices_b = np.where(arr == b)[0]
@@ -131,9 +151,11 @@ class v2_MWCCPSolution(PermutationSolution):
                 index_a = indices_a[0]
                 index_b = indices_b[0]
                 if index_a > index_b:
-                    arr[index_a], arr[index_b] = arr[index_b], arr[index_a]
-                    order[index_a], order[index_b] = order[index_b], order[index_a]
-                    swapped = True
+                    invalid_constraints.append((index_a, index_b))
+
+            if not swapped:
+                break
+
         x = np.array([self.x[i] for i in np.nditer(order)])
         if construct:
             return x
@@ -220,7 +242,6 @@ class v2_MWCCPSolution(PermutationSolution):
                     #change order back to original order
                     order[p1], order[p2] = order[p2], order[p1]
                     counter += 1
-                    #and do random swap again
                 
                 if counter > 10*n:
                     break
@@ -324,6 +345,8 @@ class v2_MWCCPSolution(PermutationSolution):
                     order = original_order
                     counter += 1
                     #and do random swap again
+
+                    
                 
                 if counter > 10*n:
                     break
@@ -392,37 +415,39 @@ class v2_MWCCPSolution(PermutationSolution):
         if p1 > p2:
             p1, p2 = p2, p1
 
+        # Get the sublist of nodes between p1 and p2
         sublist_V = sol.x[p1:p2+1]
-        sublist_U = np.arange(p1 + 1, p2 + 2) #nodes "on top of" the nodes in sublist
 
-        if len(sublist_V) != len(sublist_U):
-            raise ValueError("Sublists are not of the same length")
-        
-        #positions in self.x of the nodes in the sublist
+        # Get the positions of the nodes in the sublist
         position = {v: i for i, v in enumerate(self.x)}
 
-        affected_edges = [(u1, v1, weight) for (u1, v1, weight) in self.instance_edges if v1 in sublist_V or u1 in sublist_U]
+        # Calculate delta_old using the crossing_contrib matrix
+        for i in range(len(sublist_V)):
+            for j in range(i + 1, len(sublist_V)):
+                v1 = sublist_V[i]
+                v2 = sublist_V[j]
+                if position[v1] < position[v2]:
+                    delta_old += self.instance_crossing_contrib[(v1, v2)]
+                else:
+                    delta_old += self.instance_crossing_contrib[(v2, v1)]
 
-        for (u1, v1, w1) in affected_edges:
-            for (u2, v2, w2) in affected_edges:
-                #edges where at most least one node is in the sublist
-                if u1 < u2 and position[v1] > position[v2]:    
-                        delta_old += w1 + w2
-
-        #change positons of the nodes in the sublist (delta evaluation)
+        # Swap the positions of the nodes in the sublist
         temp = position[sublist_V[-1]]
         position[sublist_V[-1]] = position[sublist_V[0]]
         position[sublist_V[0]] = temp
 
-        for (u1, v1, w1) in affected_edges:
-            for (u2, v2, w2) in affected_edges:
-                #edges where at most least one node is in the sublist
-                if u1 < u2 and position[v1] > position[v2]:    
-                        delta_new += w1 + w2
+        # Calculate delta_new using the crossing_contrib matrix
+        for i in range(len(sublist_V)):
+            for j in range(i + 1, len(sublist_V)):
+                v1 = sublist_V[i]
+                v2 = sublist_V[j]
+                if position[v1] < position[v2]:
+                    delta_new += self.instance_crossing_contrib[(v1, v2)]
+                else:
+                    delta_new += self.instance_crossing_contrib[(v2, v1)]
 
         new_obj = obj + delta_new - delta_old
-        if new_obj < obj:
-            pass
+       
         return new_obj if new_obj < obj else obj
     
     def calc_delta_obj_shift(self, p1, p2, sol):
@@ -430,7 +455,6 @@ class v2_MWCCPSolution(PermutationSolution):
         delta_new = 0
         obj = sol.obj()  # Current objective value
         x = sol.x  # Current order
-
         # Identify the node to be shifted and its neighbors
         node_to_shift = x[p1]
         old_neighbors = []
@@ -441,12 +465,12 @@ class v2_MWCCPSolution(PermutationSolution):
 
         # Compute delta_old: crossings caused by edges involving the node at its old position
         position = {v: i for i, v in enumerate(self.x)}  # Positions of all nodes in self.x
-        for u1, v1, w1 in self.instance_edges:
-            for u2, v2, w2 in self.instance_edges:
+        for u1, v1 in self.instance_edges:
+            for u2, v2 in self.instance_edges:
                 # Check for crossings where at least one edge involves the shifted node
                 if v1 == node_to_shift or v2 == node_to_shift:
-                    if u1 < u2 and position[v1] > position[v2]:
-                        delta_old += w1 + w2
+                    if position[u1] < position[u2] and position[v1] > position[v2]:
+                        delta_old += self.instance_crossing_contrib[(u1, v1)] + self.instance_crossing_contrib[(u2, v2)]
 
         # Simulate the shift by removing the node and inserting it at the new position
         temp_x = list(x)  # Copy of the current order
@@ -457,11 +481,11 @@ class v2_MWCCPSolution(PermutationSolution):
         new_position = {v: i for i, v in enumerate(temp_x)}
 
         # Compute delta_new: crossings caused by edges involving the node at its new position
-        for u1, v1, w1 in self.instance_edges:
-            for u2, v2, w2 in self.instance_edges:
+        for u1, v1 in self.instance_edges:
+            for u2, v2 in self.instance_edges:
                 if v1 == node_to_shift or v2 == node_to_shift:
-                    if u1 < u2 and new_position[v1] > new_position[v2]:
-                        delta_new += w1 + w2
+                    if new_position[u1] < new_position[u2] and new_position[v1] > new_position[v2]:
+                        delta_new += self.instance_crossing_contrib[(u1, v1)] + self.instance_crossing_contrib[(u2, v2)]
 
         # Calculate the new objective value
         new_obj = obj + delta_new - delta_old

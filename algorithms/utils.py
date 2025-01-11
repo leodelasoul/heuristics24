@@ -81,9 +81,7 @@ class MWCCPInstance:
                             self.crossing_matrix[i, j] += contribution
                         elif u1 < u2:
                             self.crossing_matrix[j, i] += contribution
-                
-        # Reverse the self.V in a temp variable
-        reversed_V = self.V[::-1]
+
         
 
     def get_crossing_contribution(self, v1, v2):
