@@ -55,7 +55,7 @@ class Ant:
         
         total = sum(probabilities)
         if total == 0:
-            print("All probabilities are zero.")
+            #print("All probabilities are zero.")
             # Assign equal probability if all pheromone and heuristic values are zero, then ant can explore at random
             return [1 / len(available_nodes)] * len(available_nodes)
         

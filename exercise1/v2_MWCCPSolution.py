@@ -6,7 +6,7 @@ from pymhlib.permutation_solution import PermutationSolution
 from pymhlib.solution import TObj
 import sys
 
-from v2_MWCCPInstance import v2_MWCCPInstance
+from exercise1.v2_MWCCPInstance import v2_MWCCPInstance
 
 class v2_MWCCPSolution(PermutationSolution):
     instance_w: list[list[int]]

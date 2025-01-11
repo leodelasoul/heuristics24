@@ -6,8 +6,8 @@ from pymhlib.log import init_logger
 from pymhlib.scheduler import Method
 from pymhlib.settings import parse_settings, settings, get_settings_parser, get_settings_as_str
 
-from v2_MWCCPInstance import *
-from v2_MWCCPSolution import *
+from exercise1.v2_MWCCPInstance import *
+from exercise1.v2_MWCCPSolution import *
 
 DIRNAME = os.path.dirname(__file__)
 FILENAME: str = os.path.join(DIRNAME, 'test_instances/small/inst_50_4_00001')

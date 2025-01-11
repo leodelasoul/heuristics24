@@ -6,7 +6,7 @@ import networkx as nx
 import numpy
 import numpy as np
 
-import util
+import exercise1.util as util
 
 
 class v2_MWCCPInstance:
