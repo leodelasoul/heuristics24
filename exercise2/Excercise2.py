@@ -4,7 +4,7 @@ from functools import partial
 import random
 from itertools import cycle
 from typing import List, Callable, Any
-
+import time
 from pymhlib.demos.common import run_optimization
 from pymhlib.gvns import GVNS
 from pymhlib.log import init_logger
@@ -72,22 +72,19 @@ class GeneticAlgorithm(Scheduler):
         self.meth_mu = meth_mu
         self.meth_ls = meth_li
 
-        self.incumbent = self.population[self.population.best()]
+        self.incumbent = self.population[random.randint(0,self.population.size)]
 
     def run(self):
-
         population = self.population
-
         while True:
             # create a new solution
             p1 = population[population.select()].copy()
 
             # methods to perform in this iteration
             methods: List[Method] = []
-
             # optional crossover
             if random.random() < self.own_settings.mh_ssga_cross_prob:
-                p2 = population[population.select()].copy()
+                p2 = population[population.best()].copy()
 
                 # workaround for Method not allowing a second Solution as parameter
                 def meth_cx(crossover, par2: Solution, par1: Solution, _par: Any, _res: Result):
@@ -95,12 +92,11 @@ class GeneticAlgorithm(Scheduler):
 
                 meth_cx_with_p2_bound = partial(meth_cx, self.meth_cx, p2)
 
-                meth = Method("cx", meth_cx_with_p2_bound, None)
+                meth = Method("crossover", meth_cx_with_p2_bound, None)
                 methods.append(meth)
 
             # mutation
             methods.append(self.meth_mu)
-
             # optionally local search
             if self.meth_ls and random.random() < self.own_settings.mh_ssga_loc_prob:
                 methods.append(self.meth_ls)
@@ -110,20 +106,44 @@ class GeneticAlgorithm(Scheduler):
             if res.terminate:
                 break
 
-            # Replace in population
+            # Replace worst individual in population
             worst = population.worst()
             population[worst].copy_from(p1)
 
             # Update best solution
             if p1.is_better(self.incumbent):
-                self.incumbent.copy_from(p1)
+                self.incumbent = p1
 
+
+    def perform_methods(self, methods: List[Method], sol: Solution) -> Result:
+        res = Result()
+        obj_old = sol.obj()
+        method_name = ""
+        for method in methods:
+            if method_name != "":
+                method_name += "+"
+            method_name += method.name
+
+            method.func(sol, method.par, res)
+            if res.terminate:
+                break
+        t_end = time.process_time()
+
+        self.iteration += 1
+        new_incumbent = self.update_incumbent(sol, t_end - self.time_start)
+        terminate = self.check_termination()
+        self.log_iteration(method_name, obj_old, sol, new_incumbent, terminate, res.log_info)
+        if terminate:
+            self.run_time = time.process_time() - self.time_start
+            res.terminate = True
+
+        return res
 
 
 
 if __name__ == '__main__':
     parser = get_settings_parser()
-    parser.set_defaults(mh_titer=10) # number of iterations
+    parser.set_defaults(mh_titer=100) # number of iterations
     parser.set_defaults(mh_ttime=180) # time limit
 
     parser = get_settings_parser()
@@ -151,7 +171,7 @@ if __name__ == '__main__':
     ###INIT
     mWCCPInstance = v2_MWCCPInstance(FILENAME)
     mWCCPSolution = MWCCPSolutionEGA(mWCCPInstance)
-    settings.mh_pop_size = 10 #Init population size
+    settings.mh_pop_size = 1000 #Init population size
     settings.mh_pop_dupelim = False
     settings.mh_ssga_cross_prob = 1
     settings.mh_ssga_loc_prob = 0.1
@@ -160,9 +180,8 @@ if __name__ == '__main__':
         alg = GeneticAlgorithm(mWCCPSolution,
                                [Method("construct heu{i}", mWCCPSolution.construct, i) for i in range(settings.meths_ch)],
                                mWCCPSolution.crossover,
-                               Method("mu", mWCCPSolution.shaking, 1),
-                               Method("ls", mWCCPSolution.local_improve, 1))
+                               Method("mutation", mWCCPSolution.shaking, 1),
+                               Method("local_search", mWCCPSolution.local_improve, 1))
         alg.run()
         logger.info("")
-        alg.method_statistics()
         alg.main_results()

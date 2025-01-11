@@ -21,16 +21,19 @@ class MWCCPSolutionEGA(PermutationSolution, ABC):
 
     def copy(self):
         sol = MWCCPSolutionEGA(self.inst)
-        sol.x = self.x
+        # sol.x = self.x
         sol.copy_from(self)
         return sol
+
+    def copy_from(self, sol):
+        self.x = sol.x
+
 
     def calc_objective(self):
         objective_value = 0
         for (u1, v1, weight1) in self.instance_edges:
             for (u2, v2, weight2) in self.instance_edges:
-                if u1 < u2 and self.x[abs(v1 - self.inst.n) - 1] > self.x[
-                    abs(v2 - self.inst.n) - 1]:  # offset(-1) needed because instance_edges are counted from 1 instead of 0
+                if u1 < u2 and self.x[abs(v1 - self.inst.n) - 1] > self.x[abs(v2 - self.inst.n) - 1]:  # offset(-1) needed because instance_edges are counted from 1 instead of 0
                     objective_value += weight1 + weight2
         return objective_value
 
@@ -45,11 +48,11 @@ class MWCCPSolutionEGA(PermutationSolution, ABC):
         self.prior_obj_val = self.calc_objective()
         return x
 
-    def crossover(self, parent1, parent2):
+    def crossover(self, parent1, parent2): #recombine
         crossover_point = random.randint(0, self.inst.n)
         child1 = np.concatenate((parent1.x[:crossover_point], parent2.x[crossover_point:]))
         child2 = np.concatenate((parent2.x[:crossover_point], parent1.x[crossover_point:]))
-        def fix_duplicates(child, parent):
+        def replace_duplicates(child, parent):
             unique_values = set(child)
             missing_values = [val for val in parent if val not in unique_values]
             seen = set()
@@ -60,15 +63,22 @@ class MWCCPSolutionEGA(PermutationSolution, ABC):
                 seen.add(child[i])
             return child
 
-        child1 = fix_duplicates(child1, parent1.x)
-        child2 = fix_duplicates(child2, parent2.x)
+        child1 = replace_duplicates(child1, parent1.x)
+        child2 = replace_duplicates(child2, parent2.x) # if child2  is needed
+        self.x = child1
+        return self.x.copy()
 
-        return child1, child2
-    def shaking(self, _sol, _par, _res):
+    def shaking(self, _sol, _par, _res): # GA mutate step
+        for _ in range(_par):
+            a = random.randint(0, self.inst.n - 1)
+            b = random.randint(0, self.inst.n - 1)
+            if not self.is_constraint_valid(a,b):
+                continue
+            else:
+                self.x[a], self.x[b] = self.x[b], self.x[a]
+                return self.x.copy()
 
-        pass
-
-    def local_improve(self, _sol, _par, _res): #GA REPLACE STEP
+    def local_improve(self, _sol, _par, _res): #GA Local Search // optional
 
         pass
 
@@ -102,6 +112,15 @@ class MWCCPSolutionEGA(PermutationSolution, ABC):
                 if list(self.x).index(node) >= list(self.x).index(v_prime):
                     return False
                 else:
+                    #raise ValueError(f"Constraint {node} {v_prime} violated.")
+
                     self.x = [] #disregard current solution
                     return
-                    #raise ValueError(f"Constraint {node} {v_prime} violated.")
+    def is_constraint_valid(self, p1, p2):
+        x = self.x
+        first = x[p1]
+        second = x[p2]
+        if bool(second in self.instance_c.keys()):
+            if bool(first in self.instance_c[second]):
+                return False
+        return True
