@@ -20,7 +20,7 @@ from MWCCPSolutionEGA import MWCCPSolutionEGA
 DIRNAME = os.path.dirname(__file__)
 
 FILENAME: str = os.path.join(DIRNAME, '../competition_instances/inst_500_40_00021')
-FILENAME1: str = os.path.join(DIRNAME, '../test_instances/medium_large/inst_500_40_00001')
+FILENAME1: str = os.path.join(DIRNAME, '../test_instances/medium_large/inst_500_40_00004')
 FILENAME_MED: str = os.path.join(DIRNAME, '../test_instances/medium/inst_200_20_00001')
 FILENAME_LARGE: str = os.path.join(DIRNAME, '../test_instances/medium_large/inst_500_40_00001')
 FILENAME_LARGE1: str = os.path.join(DIRNAME, '../test_instances/large/inst_1000_60_00001')
@@ -198,13 +198,13 @@ if __name__ == '__main__':
     tuning_File = "../tuning_instances/small/inst_50_4_00001"
     tuning_File1 = "../tuning_instances/medium/inst_200_20_00001"
     tuning_File2 = "../tuning_instances/medium_large/inst_500_40_00002.txt"
-    mWCCPInstance = v2_MWCCPInstance(FILENAME1)
+    mWCCPInstance = v2_MWCCPInstance(tuning_File)
     mWCCPSolution = MWCCPSolutionEGA(mWCCPInstance)
 
     ### Parameter
     # best parameters from tuning: 0.8 , selection method:  roulette , mh_pop_size:  500 , mh_titer:  1000
     parser.set_defaults(mh_ttime=5000) # time limit
-    parser.set_defaults(alg="ssga")
+    parser.set_defaults(alg="ssga_tuned")
     parser = get_settings_parser()
     settings.mh_pop_size = 500 #Init population size
     settings.mh_pop_dupelim = False # Allow duplicates
@@ -218,11 +218,11 @@ if __name__ == '__main__':
                            Method("local_search", mWCCPSolution.local_improve, 1))
 
     if settings.alg == 'ssga':
-        output_file = "test_compare_ga/medium_large/inst_500_40_00001.csv"
+        output_file = "test_compare_ga/medium_large/inst_500_40_00004.csv"
         with open(output_file, "w") as file:
             file.write("ACO\tGA\n")
 
-        for i in range(3): #number for test runs
+        for i in range(5): #number for test runs
             alg.run({
                 "mh_fixed_crossover": 0.8,
                 "mh_selection_method": "roulette"})
