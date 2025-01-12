@@ -1,7 +1,7 @@
 import sys
 import os
 from algorithms.mmas import MMAS
-from algorithms.utils import MWCCPInstance
+from algorithms.instance import MWCCPInstance
 #from algorithms.smac_tuning import run_smac_tuning
 
 DIRNAME = os.path.dirname(__file__)
@@ -35,7 +35,7 @@ def main(input_file, output_file, tuning=False):
             "num_ants": 40,        # Number of ants
             "num_iterations": 1000, # Max iterations
             "initial_tau": 5.0,    # Initial pheromone level
-            "reinit_threshold": 15 # Stagnation threshold
+            "reinit_threshold": 100 # Stagnation threshold
         }
 
         # Initialize MMAS solver
@@ -52,7 +52,7 @@ def main(input_file, output_file, tuning=False):
 
 if __name__ == "__main__":
     if len(sys.argv) != 3:
-        main(FILENAME_COMPET_1, "mmas_out")
+        main(FILENAME_COMPET_2, "mmas_out")
         #print("Usage: python main.py <input_file> <output_file>")
     else:
         main(sys.argv[1], sys.argv[2])

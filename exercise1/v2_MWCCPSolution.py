@@ -6,7 +6,7 @@ from pymhlib.permutation_solution import PermutationSolution
 from pymhlib.solution import TObj
 import sys
 
-from exercise1.v2_MWCCPInstance import v2_MWCCPInstance
+from v2_MWCCPInstance import v2_MWCCPInstance
 
 class v2_MWCCPSolution(PermutationSolution):
     instance_w: list[list[int]]
@@ -83,28 +83,56 @@ class v2_MWCCPSolution(PermutationSolution):
 
         return objective_value
     
-    #deterministic construction heuristic
     def construct(self, _par, _result):
-        # Step 1: compute average position of each node in V
+        """
+        Deterministic construction heuristic that adjusts node positions
+        based on edge weights and constraints.
+
+        Args:
+            _par: Additional parameters (if any).
+            _result: Result object for storing intermediate results (if any).
+        """
+        # Step 1: Compute weighted average position of each node in V
         averages = {}
         V = list(self.instance_v)
         for v in V:
-            edges_to_v = self.instance_adj_v[v]
+            edges_to_v = self.instance_adj_v[v]  # Get edges connected to v
             if edges_to_v:
-                total_position = sum((u) for u in edges_to_v)
-                averages[v] = total_position / len(edges_to_v)
+                # Calculate weighted average position for node v
+                total_position = 0
+                total_weight = 0
+                highest_weight = float('-inf')
+                highest_position = None
+
+                for u in edges_to_v:
+                    weight = self.instance_w[u][v]
+                    total_position += u * weight
+                    total_weight += weight
+
+                    # Track the highest weight and corresponding position
+                    if weight > highest_weight:
+                        highest_weight = weight
+                        highest_position = u
+
+                # Weighted average with priority for the highest weight edge
+                if total_weight > 0:
+                    averages[v] = (total_position / total_weight) * 0.8 + highest_position * 0.2
+                else:
+                    averages[v] = 0
             else:
                 averages[v] = 0
 
-        # Step 2: sort V by average position
+        # Step 2: Sort V by weighted average position
         sorted_V = sorted(V, key=lambda v: averages[v])
 
-        # Step 3: resolve constraint violations
-        sorted_V = np.array(list(sorted_V)) - (self.inst.n+1)
+        # Step 3: Resolve constraint violations
+        sorted_V = np.array(list(sorted_V)) - (self.inst.n + 1)
         sorted_V = self.check_order_constraints(sorted_V, construct=True)
+
+        # Store the sorted solution
         self.x = sorted_V
         self.invalidate()
-
+        
     # random construction heuristic
     def construct_random(self, _par, _result):
         order = np.arange(self.inst.n)

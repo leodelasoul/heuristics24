@@ -9,6 +9,7 @@ class MWCCPInstance:
         self.V: List[int] = []
         self.constraints: List[Tuple[int, int]] = []
         self.edges: List[Tuple[int, int, int]] = []
+        self.in_degree: Dict[int, int] = {}
         self.crossing_matrix = None
 
         # Automatically parse the instance file
@@ -29,6 +30,9 @@ class MWCCPInstance:
         # Initialize U and V sets
         self.U = list(range(1, U_size + 1))
         self.V = list(range(U_size + 1, U_size + V_size + 1))
+
+        # Initialize in-degree for each V node
+        self.in_degree = {v: 0 for v in self.V}
 
         # Parse constraints and edges
         parsing_constraints = False
@@ -56,6 +60,15 @@ class MWCCPInstance:
                 # Parse edges as triples (u, v, weight)
                 u, v, weight = map(int, line.split())
                 self.edges.append((u, v, weight))
+                self.in_degree[v] += 1
+
+        # Initialize adjacency dictionary for nodes in V
+        self.adjacent_v = {v: [] for v in self.V}
+
+        # Populate adjacency dictionary
+        for u, v, weight in self.edges:
+            self.adjacent_v[v].append((u, weight))
+
 
     def _precompute_crossings(self):
         # Create a mapping of edges for each node in V
@@ -90,28 +103,9 @@ class MWCCPInstance:
     
 
     def get_instance(self) -> Dict[str, np.ndarray]:
-        """
-        Get the parsed problem instance as a dictionary.
-        
-        Returns:
-            Dict[str, np.ndarray]: A dictionary containing U, V, constraints, and edges.
-        """
         return {
             "U": np.array(self.U),
             "V": np.array(self.V),
             "constraints": np.array(self.constraints),
             "edges": np.array(self.edges),
         }
-
-    def __repr__(self):
-        """
-        String representation of the instance for debugging purposes.
-        """
-        return (
-            f"MWCCPInstance(\n"
-            f"  U: {self.U},\n"
-            f"  V: {self.V},\n"
-            f"  Constraints: {self.constraints},\n"
-            f"  Edges: {self.edges}\n"
-            f")"
-        )

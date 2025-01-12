@@ -6,16 +6,16 @@ from pymhlib.log import init_logger
 from pymhlib.scheduler import Method
 from pymhlib.settings import parse_settings, settings, get_settings_parser, get_settings_as_str
 
-from exercise1.v2_MWCCPInstance import *
-from exercise1.v2_MWCCPSolution import *
+from v2_MWCCPInstance import *
+from v2_MWCCPSolution import *
 
 DIRNAME = os.path.dirname(__file__)
-FILENAME: str = os.path.join(DIRNAME, 'test_instances/small/inst_50_4_00001')
-FILENAME_COMPET_1: str = os.path.join(DIRNAME, 'competition_instances/inst_50_4_00001')
-FILENAME_COMPET_2: str = os.path.join(DIRNAME, 'competition_instances/inst_200_20_00001')
-FILENAME_COMPET_3: str = os.path.join(DIRNAME, 'competition_instances/inst_500_40_00003')
-FILENAME_COMPET_4: str = os.path.join(DIRNAME, 'competition_instances/inst_500_40_00012')
-FILENAME_COMPET_5: str = os.path.join(DIRNAME, 'competition_instances/inst_500_40_00021')
+FILENAME: str = os.path.join(DIRNAME, '../test_instances/small/inst_50_4_00001')
+FILENAME_COMPET_1: str = os.path.join(DIRNAME, '../competition_instances/inst_50_4_00001')
+FILENAME_COMPET_2: str = os.path.join(DIRNAME, '../competition_instances/inst_200_20_00001')
+FILENAME_COMPET_3: str = os.path.join(DIRNAME, '../competition_instances/inst_500_40_00003')
+FILENAME_COMPET_4: str = os.path.join(DIRNAME, '../competition_instances/inst_500_40_00012')
+FILENAME_COMPET_5: str = os.path.join(DIRNAME, '../competition_instances/inst_500_40_00021')
 
 FILENAME_TEST_SMALL: str = os.path.join(DIRNAME, 'test_instances/small/inst_50_4_00003')
 FILENAME_TEST_MEDIUM: str = os.path.join(DIRNAME, 'test_instances/medium/inst_50_4_000010')
@@ -29,15 +29,15 @@ FILENAME_TUNING_LARGE: str = os.path.join(DIRNAME, 'competition_instances/inst_5
 # FILENAME_LARGE: str = os.path.join(DIRNAME, 'test_instances/la')
 if __name__ == '__main__':
     parser = get_settings_parser()
-    parser.set_defaults(mh_titer=10000) # number of iterations
+    parser.set_defaults(mh_titer=1500) # number of iterations
     parser.set_defaults(mh_ttime=300) # time limit
 
     ###INIT
-    mWCCPInstance = v2_MWCCPInstance(FILENAME_COMPET_3)  # FILENAME
+    mWCCPInstance = v2_MWCCPInstance(FILENAME_COMPET_1)  # FILENAME
     mWCCPSolution = v2_MWCCPSolution(mWCCPInstance)
 
     ###Parser arguments
-    parser.add_argument("--alg", type=str, default='ls', help='optimization algorithm to be used '
+    parser.add_argument("--alg", type=str, default='const_det', help='optimization algorithm to be used '
                                                                 '(const_det, const_rand, ls, vnd, grasp, gvns, sa, ts)')
     parser.add_argument("--inst_file", type=str, default=mWCCPInstance,
                         help='problem instance file')
