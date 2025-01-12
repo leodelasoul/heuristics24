@@ -29,6 +29,17 @@ def main(input_file, output_file, tuning=False):
         "reinit_threshold": 40 # Stagnation threshold
     }
 
+    params  = {
+        "alpha": 1.8419192896947711,
+        "beta": 2.4520290182502418,
+        "rho": 0.10771225749644961,
+        "num_ants": 97,
+        "num_iterations": 11842,
+        "initial_tau": 8,
+        "reinit_threshold": 42
+    }
+
+
     # Initialize MMAS solver
     solver = MMAS(instance, params)
 
