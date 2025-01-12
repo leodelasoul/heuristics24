@@ -31,12 +31,12 @@ class MWCCPSolutionEGA(PermutationSolution, ABC):
 
 
     def calc_objective(self):
-        objective_value = 0
-        for (u1, v1, weight1) in self.instance_edges:
-            for (u2, v2, weight2) in self.instance_edges:
-                if u1 < u2 and self.x[abs(v1 - self.inst.n) - 1] > self.x[abs(v2 - self.inst.n) - 1]:  # offset(-1) needed because instance_edges are counted from 1 instead of 0
-                    objective_value += weight1 + weight2
-        return objective_value
+        cost = 0
+        for i in range(len(self.x)):
+            for j in range(i + 1, len(self.x)):
+                v1, v2 = self.x[i], self.x[j]
+                cost += self.inst.get_crossing_contribution(v1, v2)
+        return cost
 
     def construct(self, _sol, _par, _res): #GA INIT STEP
         order = np.arange(self.inst.n)
@@ -146,3 +146,4 @@ class MWCCPSolutionEGA(PermutationSolution, ABC):
             if bool(first in self.instance_c[second]):
                 return False
         return True
+

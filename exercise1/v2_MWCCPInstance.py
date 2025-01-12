@@ -23,8 +23,10 @@ class v2_MWCCPInstance:
     def __init__(self, file_name):
         self.file_name: str = file_name
         self.instance: Dict[str, numpy.ndarray] = {}
+        self.crossing_matrix = None
 
         self.set_problem_instance()
+        self._precompute_crossings()
 
        
     def get_instance(self):
@@ -114,4 +116,33 @@ class v2_MWCCPInstance:
         self.n = U_size
 
         self.instance = {"u": U_vector, "v": V_vector, "c": constraint_dict, "w": weight_matrix, "edges": edges, "c_tup": constraints, "adj_v": adjacency_from_V, "n": U_size}
+
+    def _precompute_crossings(self):
+        # Create a mapping of edges for each node in V
+        edges_by_v = {v: [] for v in self.get_instance()['v']}
+        for u, v, weight in self.get_instance()['edges']:
+            edges_by_v[v].append((u, weight))
+
+        # Initialize crossing matrix
+        self.crossing_matrix = np.zeros((len(self.get_instance()['v']), len(self.get_instance()['v'])))
+
+        # Compute crossing contributions for each pair of V nodes
+        for i, v1 in enumerate(self.get_instance()['v']):
+            for j, v2 in enumerate(self.get_instance()['v']):
+                if i >= j:
+                    continue  # Avoid duplicate pairs
+
+                for (u1, w1) in edges_by_v[v1]:
+                    for (u2, w2) in edges_by_v[v2]:
+                        contribution = 0
+                        if u1 != u2:  # Edges must connect different U nodes to cross
+                            contribution += w1 + w2
+                        if u1 > u2:
+                            self.crossing_matrix[i, j] += contribution
+                        elif u1 < u2:
+                            self.crossing_matrix[j, i] += contribution
+
+    def get_crossing_contribution(self, v1, v2):
+        i, j = list(self.get_instance()['v']).index(v1), list(self.get_instance()['v']).index(v2)
+        return self.crossing_matrix[i, j]
 
