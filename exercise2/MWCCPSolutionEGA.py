@@ -36,6 +36,8 @@ class MWCCPSolutionEGA(PermutationSolution, ABC):
             for j in range(i + 1, len(self.x)):
                 v1, v2 = self.x[i], self.x[j]
                 cost += self.inst.get_crossing_contribution(v1, v2)
+            # if self.
+            #     cost = max(0, a * cost + b) #linear scaling
         return cost
 
     def construct(self, _sol, _par, _res): #GA INIT STEP

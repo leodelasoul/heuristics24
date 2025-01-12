@@ -20,7 +20,7 @@ from MWCCPSolutionEGA import MWCCPSolutionEGA
 DIRNAME = os.path.dirname(__file__)
 
 FILENAME: str = os.path.join(DIRNAME, '../competition_instances/inst_500_40_00021')
-FILENAME1: str = os.path.join(DIRNAME, '../test_instances/small/inst_50_4_00001')
+FILENAME1: str = os.path.join(DIRNAME, '../test_instances/medium_large/inst_500_40_00001')
 FILENAME_MED: str = os.path.join(DIRNAME, '../test_instances/medium/inst_200_20_00001')
 FILENAME_LARGE: str = os.path.join(DIRNAME, '../test_instances/medium_large/inst_500_40_00001')
 FILENAME_LARGE1: str = os.path.join(DIRNAME, '../test_instances/large/inst_1000_60_00001')
@@ -172,7 +172,7 @@ class GeneticAlgorithm(Scheduler):
 
 if __name__ == '__main__':
     parser = get_settings_parser()
-    parser.add_argument("--alg", type=str, default='ssga_tuned', help='ssga, ssga_tuned')
+    parser.add_argument("--alg", type=str, default='ssga', help='ssga, ssga_tuned')
     parser.add_argument("--inst_file", type=str, default=FILENAME1,
                         help='problem instance file')
     parser.add_argument("--meths_ch", type=int, default=1,
@@ -197,17 +197,20 @@ if __name__ == '__main__':
     ###INIT
     tuning_File = "../tuning_instances/small/inst_50_4_00001"
     tuning_File1 = "../tuning_instances/medium/inst_200_20_00001"
-    mWCCPInstance = v2_MWCCPInstance(tuning_File)
+    tuning_File2 = "../tuning_instances/medium_large/inst_500_40_00002.txt"
+    mWCCPInstance = v2_MWCCPInstance(FILENAME1)
     mWCCPSolution = MWCCPSolutionEGA(mWCCPInstance)
 
     ### Parameter
-    parser.set_defaults(mh_titer=100) # number of iterations
+    # best parameters from tuning: 0.8 , selection method:  roulette , mh_pop_size:  500 , mh_titer:  1000
     parser.set_defaults(mh_ttime=5000) # time limit
+    parser.set_defaults(alg="ssga")
     parser = get_settings_parser()
-    settings.mh_pop_size = 100 #Init population size
+    settings.mh_pop_size = 500 #Init population size
     settings.mh_pop_dupelim = False # Allow duplicates
     settings.mh_ssga_cross_prob = 1 # whether to use crossover , kinda useless
     settings.mh_ssga_loc_prob = 0.1 # whether to use local search
+    settings.mh_titer = 1000
     alg = GeneticAlgorithm(mWCCPSolution,
                            [Method("construct heu{i}", mWCCPSolution.construct, i) for i in range(settings.meths_ch)],
                            mWCCPSolution.crossover,
@@ -215,9 +218,27 @@ if __name__ == '__main__':
                            Method("local_search", mWCCPSolution.local_improve, 1))
 
     if settings.alg == 'ssga':
-        alg.run(None)
-        logger.info("")
-        alg.main_results()
+        output_file = "test_compare_ga/medium_large/inst_500_40_00001.csv"
+        with open(output_file, "w") as file:
+            file.write("ACO\tGA\n")
+
+        for i in range(3): #number for test runs
+            alg.run({
+                "mh_fixed_crossover": 0.8,
+                "mh_selection_method": "roulette"})
+            logger.info("")
+            alg.main_results()
+
+            with open(output_file, "a") as file:  # Append to the file
+                file.write(f"{0}\t{alg.incumbent.obj()}\n")
+
+            alg = GeneticAlgorithm(mWCCPSolution,  # reinit the alg
+                                   [Method("construct heu{i}", mWCCPSolution.construct, i) for i in
+                                    range(settings.meths_ch)],
+                                   mWCCPSolution.crossover,
+                                   Method("mutation", mWCCPSolution.shaking, 1),
+                                   Method("local_search", mWCCPSolution.local_improve, 1))
+
 
     if settings.alg == 'ssga_tuned':
         tuned_parameter = {
@@ -236,8 +257,15 @@ if __name__ == '__main__':
                     "mh_fixed_crossover": tuned_parameter["mh_fixed_crossover"][i],
                     "mh_selection_method": tuned_parameter["mh_selection_method"][j],
                 })
-                print("best solution: ", alg.incumbent)
-                print("time spend: ", alg.run_time)
+                print("best solution: ", alg.incumbent, " with obj value: ", alg.incumbent.obj())
+                print(f"time spent: {alg.run_time:.3f} seconds")
+                print("paramter selection for run:", count )
+                print("fixed crossoverpoint: ", tuned_parameter["mh_fixed_crossover"][i],
+                      ", selection method: ", tuned_parameter["mh_selection_method"][j],
+                      ", mh_pop_size: ", tuned_parameter["mh_pop_size"][j],
+                      ", mh_titer: ", tuned_parameter["mh_titer"][j],
+                )
+                print("---------------------")
 
                 alg = GeneticAlgorithm(mWCCPSolution,  #reinit the alg
                                        [Method("construct heu{i}", mWCCPSolution.construct, i) for i in
