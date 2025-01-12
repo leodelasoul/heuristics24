@@ -21,25 +21,26 @@ PARAMS = {
         "beta": 2.4520290182502418,
         "rho": 0.10771225749644961,
         "num_ants": 97,
-        "num_iterations": 11842,
+        "num_iterations": 842,
         "initial_tau": 8,
         "reinit_threshold": 42,
     },
     "default": {
-        "alpha": 1.0,
-        "beta": 1.0,
-        "rho": 0.05,
-        "num_ants": 100,
-        "num_iterations": 1000,
-        "initial_tau": 5.0,
-        "reinit_threshold": 40,
+        "alpha": 2.6,
+        "beta": 1.6,
+        "rho": 0.8,
+        "num_ants": 36,
+        "num_iterations": 229,
+        "initial_tau": 4,
+        "reinit_threshold": 20,
     },
 }
 
-def run_mmas_on_instances(folder, size, num_runs, output_folder):
+def run_mmas_on_instances(folder, size, num_runs, output_folder, amount_of_files = 3):
     """
     Run MMAS on all instances in the folder and save results in CSV files.
     """
+    counter = 0
     os.makedirs(output_folder, exist_ok=True)  # Ensure output folder exists
 
     for instance_file in sorted(os.listdir(folder)):
@@ -71,6 +72,11 @@ def run_mmas_on_instances(folder, size, num_runs, output_folder):
 
                 # Write the results to CSV
                 writer.writerow([best_cost, elapsed_time])
+        
+        if counter == amount_of_files:
+            break
+        counter += 1
+            
 
         print(f"Results saved to {csv_file}")
 
