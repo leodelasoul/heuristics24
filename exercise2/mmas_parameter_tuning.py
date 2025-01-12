@@ -11,13 +11,6 @@ FILENAME: str = os.path.join(DIRNAME, '../test_instances/small/inst_50_4_00001')
 def objective(params, instance_file):
     """
     Objective function for Scikit-Optimize.
-    
-    Args:
-        params (list): List of parameter values [alpha, beta, rho, num_ants, num_iterations].
-        instance_file (str): Path to the instance file.
-
-    Returns:
-        float: Best cost (to be minimized).
     """
     alpha, beta, rho, num_ants, num_iterations, initial_tau, reinit_threshold = params
 
@@ -44,20 +37,16 @@ def objective(params, instance_file):
 def tune_and_save_results(input_folder, output_file):
     """
     Perform tuning for all instances in a folder and save results to a file.
-
-    Args:
-        input_folder (str): Path to the folder containing instance files.
-        output_file (str): Path to the output file for saving results.
     """
     # Define the parameter space for tuning
     param_space = [
-        Real(0.5, 2.0, name="alpha"),          # Influence of pheromones
+        Real(1.0, 3.0, name="alpha"),          # Influence of pheromones
         Real(1.0, 3.0, name="beta"),           # Influence of heuristic
-        Real(0.05, 0.5, name="rho"),           # Evaporation rate
-        Integer(10, 100, name="num_ants"),     # Number of ants
-        Integer(50, 500, name="num_iterations"),  # Number of iterations
+        Real(0.05, 0.9, name="rho"),           # Evaporation rate
+        Integer(20, 100, name="num_ants"),     # Number of ants
+        Integer(50, 1000, name="num_iterations"),  # Number of iterations
         Integer(1, 10, name="initial_tau"),     # Initial pheromone level
-        Integer(10, 100, name="reinit_threshold")  # Stagnation threshold
+        Integer(10, 50, name="reinit_threshold")  # Stagnation threshold
     ]
 
     results = []
@@ -72,7 +61,7 @@ def tune_and_save_results(input_folder, output_file):
             result = gp_minimize(
                 func=lambda params: objective(params, full_path),
                 dimensions=param_space,
-                n_calls=50,
+                n_calls=20,
                 random_state=42
             )
 
@@ -83,6 +72,7 @@ def tune_and_save_results(input_folder, output_file):
                 "best_cost": result.fun
             })
 
+    average = []
     # Save all results to the output file
     with open(output_file, "w") as f:
         for result in results:
@@ -91,11 +81,23 @@ def tune_and_save_results(input_folder, output_file):
             f.write(f"Best Cost: {result['best_cost']}\n")
             f.write("\n")  # Separate entries with a newline
 
+            for i, value in enumerate(result['best_params']):
+                if average[i] == None:
+                    average[i] = value
+                else:
+                    average[i] += value
+
+    average_file = os.path.join(DIRNAME, 'tuning_sol/tuning_averages')
+    with open('average_file', "w") as f:
+        f.write(os.path.basename(output_file) + "\n")
+        f.write(f"Average Parameters: {average}\n")
+        f.write("\n")
+
     print(f"Results saved to {output_file}")
 
 # Example usage
 if __name__ == "__main__":
     input_folder = os.path.join(DIRNAME, '../tuning_instances/small') # Change this to the desired folder
     print(input_folder)
-    output_file = os.path.join(DIRNAME, 'tuning_sol/tuning_results_small.txt')  # Change this to the desired output file
+    output_file = os.path.join(DIRNAME, 'tuning_sol/tuning_results_small')  # Change this to the desired output file
     tune_and_save_results(input_folder, output_file)

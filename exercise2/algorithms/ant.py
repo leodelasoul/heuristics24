@@ -21,6 +21,12 @@ class Ant:
         available_nodes = list(self.instance.V)
         self.solution = []
 
+        #start at random node
+        chosen_first = random.choice(available_nodes)
+        self.solution.append(chosen_first)
+        available_nodes.remove(chosen_first)
+
+
         # Start constructing the solution
         while available_nodes:
             probabilities = self._calculate_probabilities(available_nodes)
