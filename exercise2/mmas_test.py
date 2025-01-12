@@ -26,17 +26,17 @@ PARAMS = {
         "reinit_threshold": 42,
     },
     "default": {
-        "alpha": 2.6,
-        "beta": 1.6,
-        "rho": 0.8,
-        "num_ants": 36,
-        "num_iterations": 229,
-        "initial_tau": 4,
-        "reinit_threshold": 20,
+        "alpha": 2.241,
+        "beta": 2.517,
+        "rho": 0.229,
+        "num_ants": 100,
+        "num_iterations": 83,
+        "initial_tau": 7,
+        "reinit_threshold": 14,
     },
 }
 
-def run_mmas_on_instances(folder, size, num_runs, output_folder, amount_of_files = 3):
+def run_mmas_on_instances(folder, size, num_runs, output_folder, amount_of_files = 2):
     """
     Run MMAS on all instances in the folder and save results in CSV files.
     """
@@ -57,7 +57,7 @@ def run_mmas_on_instances(folder, size, num_runs, output_folder, amount_of_files
         # Prepare CSV output
         csv_file = os.path.join(output_folder, f"{os.path.basename(instance_file)}.csv")
         with open(csv_file, "w", newline="") as csvfile:
-            writer = csv.writer(csvfile)
+            writer = csv.writer(csvfile, delimiter='\t')
             writer.writerow(["mmas", "mmas_time"])  # Add more columns if needed
 
             for run in range(num_runs):
@@ -82,7 +82,7 @@ def run_mmas_on_instances(folder, size, num_runs, output_folder, amount_of_files
 
 if __name__ == "__main__":
     
-    size = "small"  # Change this to "medium", "medium_large", or "large" as needed
+    size = "medium"  # Change this to "medium", "medium_large", or "large" as needed
 
     if size not in TEST_FOLDERS:
         print(f"Invalid size '{size}'. Choose from: small, medium, medium_large, large")
@@ -94,4 +94,3 @@ if __name__ == "__main__":
     num_runs = 10 if size == "small" else 5
 
     run_mmas_on_instances(input_folder, size, num_runs, output_folder)
-
