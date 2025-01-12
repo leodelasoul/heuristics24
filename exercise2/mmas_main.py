@@ -12,7 +12,7 @@ FILENAME_COMPET_3: str = os.path.join(DIRNAME, '../competition_instances/inst_50
 FILENAME_COMPET_4: str = os.path.join(DIRNAME, '../competition_instances/inst_500_40_00012')
 FILENAME_COMPET_5: str = os.path.join(DIRNAME, '../competition_instances/inst_500_40_00021')
 
-def main(input_file, output_file, tuning=False):
+def main(input_file, output_file, input_size="small"):
         
 
     # Parse the problem instance
@@ -29,15 +29,27 @@ def main(input_file, output_file, tuning=False):
         "reinit_threshold": 40 # Stagnation threshold
     }
 
-    params  = {
-        "alpha": 1.8419192896947711,
-        "beta": 2.4520290182502418,
-        "rho": 0.10771225749644961,
-        "num_ants": 97,
-        "num_iterations": 11842,
-        "initial_tau": 8,
-        "reinit_threshold": 42
-    }
+    if input_size == "small":
+        params  = {
+            "alpha": 1.8419192896947711,
+            "beta": 2.4520290182502418,
+            "rho": 0.10771225749644961,
+            "num_ants": 97,
+            "num_iterations": 842,
+            "initial_tau": 8,
+            "reinit_threshold": 42
+        }
+    else:
+        params = {
+            "alpha": 2.2414470214334323,
+            "beta": 2.5174274204112432,
+            "rho": 0.22972339690248644,
+            "num_ants": 100,
+            "num_iterations": 83,
+            "initial_tau": 7,
+            "reinit_threshold": 14
+        }
+
 
 
     # Initialize MMAS solver
@@ -54,7 +66,8 @@ def main(input_file, output_file, tuning=False):
 
 if __name__ == "__main__":
     if len(sys.argv) != 3:
-        main(FILENAME_COMPET_1, "mmas_out")
+        input_size = "small"
+        main(FILENAME_COMPET_1, "mmas_out", input_size)
         #print("Usage: python main.py <input_file> <output_file>")
     else:
         main(sys.argv[1], sys.argv[2])
