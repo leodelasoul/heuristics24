@@ -12,7 +12,7 @@ TEST_FOLDERS = {
     "medium_large": os.path.join(DIRNAME, '../test_instances/medium_large'),
     "large": os.path.join(DIRNAME, '../test_instances/large'),
 }
-OUTPUT_BASE = os.path.join(DIRNAME, 'test_compare')
+OUTPUT_BASE = os.path.join(DIRNAME, 'test_compare_mmas')
 
 # Predefined parameters for MMAS based on instance size
 PARAMS = {
@@ -88,7 +88,7 @@ def run_mmas_on_instances(folder, size, num_runs, output_folder, amount_of_files
 
 if __name__ == "__main__":
     
-    size = "small"  # Change this to "medium", "medium_large", or "large" as needed
+    size = "medium"  # Change this to "medium", "medium_large", or "large" as needed
 
     if size not in TEST_FOLDERS:
         print(f"Invalid size '{size}'. Choose from: small, medium, medium_large, large")
@@ -97,6 +97,6 @@ if __name__ == "__main__":
     input_folder = TEST_FOLDERS[size]
     output_folder = os.path.join(OUTPUT_BASE, size)
 
-    num_runs = 30 if size == "small" else 5
+    num_runs = 10 if size == "small" else 10
 
     run_mmas_on_instances(input_folder, size, num_runs, output_folder)
