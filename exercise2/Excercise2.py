@@ -172,7 +172,7 @@ class GeneticAlgorithm(Scheduler):
 
 if __name__ == '__main__':
     parser = get_settings_parser()
-    parser.add_argument("--alg", type=str, default='ssga', help='ssga, ssga_tuned')
+    parser.add_argument("--alg", type=str, default='ssga_tuned', help='ssga, ssga_tuned')
     parser.add_argument("--inst_file", type=str, default=FILENAME1,
                         help='problem instance file')
     parser.add_argument("--meths_ch", type=int, default=1,
@@ -190,11 +190,14 @@ if __name__ == '__main__':
     parse_settings(None, 0)
 
     init_logger()
+
     logger = logging.getLogger("pymhlib")
     logger.info("pymhlib demo for solving MWCCP")
 
     ###INIT
-    mWCCPInstance = v2_MWCCPInstance(FILENAME1)
+    tuning_File = "../tuning_instances/small/inst_50_4_00001"
+    tuning_File1 = "../tuning_instances/medium/inst_200_20_00001"
+    mWCCPInstance = v2_MWCCPInstance(tuning_File)
     mWCCPSolution = MWCCPSolutionEGA(mWCCPInstance)
 
     ### Parameter
@@ -205,24 +208,18 @@ if __name__ == '__main__':
     settings.mh_pop_dupelim = False # Allow duplicates
     settings.mh_ssga_cross_prob = 1 # whether to use crossover , kinda useless
     settings.mh_ssga_loc_prob = 0.1 # whether to use local search
+    alg = GeneticAlgorithm(mWCCPSolution,
+                           [Method("construct heu{i}", mWCCPSolution.construct, i) for i in range(settings.meths_ch)],
+                           mWCCPSolution.crossover,
+                           Method("mutation", mWCCPSolution.shaking, 1),
+                           Method("local_search", mWCCPSolution.local_improve, 1))
 
     if settings.alg == 'ssga':
-        alg = GeneticAlgorithm(mWCCPSolution,
-                               [Method("construct heu{i}", mWCCPSolution.construct, i) for i in range(settings.meths_ch)],
-                               mWCCPSolution.crossover,
-                               Method("mutation", mWCCPSolution.shaking, 1),
-                               Method("local_search", mWCCPSolution.local_improve, 1))
         alg.run(None)
         logger.info("")
         alg.main_results()
 
     if settings.alg == 'ssga_tuned':
-
-        alg = GeneticAlgorithm(mWCCPSolution,
-                               [Method("construct heu{i}", mWCCPSolution.construct, i) for i in range(settings.meths_ch)],
-                               mWCCPSolution.crossover,
-                               Method("mutation", mWCCPSolution.shaking, 1),
-                               Method("local_search", mWCCPSolution.local_improve, 1))
         tuned_parameter = {
             "mh_fixed_crossover": [0.6, 0.8, 0.9],
             "mh_selection_method": ["tournament", "roulette"],
@@ -239,10 +236,12 @@ if __name__ == '__main__':
                     "mh_fixed_crossover": tuned_parameter["mh_fixed_crossover"][i],
                     "mh_selection_method": tuned_parameter["mh_selection_method"][j],
                 })
+                print("best solution: ", alg.incumbent)
+                print("time spend: ", alg.run_time)
 
-                print("###")
-                print("Parameter tuned run:", count, " with:", )
-                print("Objective Value: ", alg.incumbent.obj())
-                print("Best Solution: ", alg.incumbent)
-                print("Time needed", alg.run_time)
-                print("###")
+                alg = GeneticAlgorithm(mWCCPSolution,  #reinit the alg
+                                       [Method("construct heu{i}", mWCCPSolution.construct, i) for i in
+                                        range(settings.meths_ch)],
+                                       mWCCPSolution.crossover,
+                                       Method("mutation", mWCCPSolution.shaking, 1),
+                                       Method("local_search", mWCCPSolution.local_improve, 1))
