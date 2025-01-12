@@ -61,9 +61,11 @@ def run_mmas_on_instances(folder, size, num_runs, output_folder, amount_of_files
 
         # Prepare CSV output
         csv_file = os.path.join(output_folder, f"{os.path.basename(instance_file)}.csv")
-        with open(csv_file, "w", newline="") as csvfile:
+        file_exists = os.path.isfile(csv_file)
+        with open(csv_file, "a", newline="") as csvfile:
             writer = csv.writer(csvfile, delimiter='\t')
-            writer.writerow(["mmas", "mmas_time"])  # Add more columns if needed
+            if not file_exists:
+                writer.writerow(["mmas", "mmas_time"])  # Add more columns if needed
 
             for run in range(num_runs):
                 print(f"  Run {run + 1}/{num_runs}")
@@ -81,13 +83,12 @@ def run_mmas_on_instances(folder, size, num_runs, output_folder, amount_of_files
         if counter == amount_of_files:
             break
         counter += 1
-            
 
         print(f"Results saved to {csv_file}")
 
 if __name__ == "__main__":
     
-    size = "medium_large"  # Change this to "medium", "medium_large", or "large" as needed
+    size = "small"  # Change this to "medium", "medium_large", or "large" as needed
 
     if size not in TEST_FOLDERS:
         print(f"Invalid size '{size}'. Choose from: small, medium, medium_large, large")
@@ -96,6 +97,6 @@ if __name__ == "__main__":
     input_folder = TEST_FOLDERS[size]
     output_folder = os.path.join(OUTPUT_BASE, size)
 
-    num_runs = 10 if size == "small" else 5
+    num_runs = 30 if size == "small" else 5
 
     run_mmas_on_instances(input_folder, size, num_runs, output_folder)
