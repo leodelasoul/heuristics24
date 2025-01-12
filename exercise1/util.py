@@ -47,3 +47,18 @@ def draw_small_instance(w, graph, top_nodes):
             node_color=["skyblue" if node in top_nodes else "lightgreen" for node in graph.nodes()], ax=ax)
     nx.draw_networkx_edge_labels(graph, rotated_pos, edge_labels=weights)  # Display weights
     plt.show()
+
+
+def convergence_plot(data):
+    iterations = data['iteration']  # Iterations up to the best solution
+    objective_vals = data['obj_val']  # Iterations up to the best solution
+
+    # Plotting the convergence plot
+    plt.figure(figsize=(10, 6))
+    plt.plot(iterations, objective_vals, label="Best Objective Value", color="blue", linewidth=2)
+    plt.xlabel("Iterations", fontsize=12)
+    plt.ylabel("Objective Value", fontsize=12)
+    plt.title("Convergence Plot", fontsize=14)
+    plt.grid(alpha=0.5)
+    plt.legend()
+    plt.show()

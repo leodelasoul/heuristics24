@@ -3,7 +3,7 @@ import os
 from functools import partial
 import random
 from itertools import cycle
-from typing import List, Callable, Any
+from typing import List, Callable, Any, Optional
 import time
 from pymhlib.demos.common import run_optimization
 from pymhlib.gvns import GVNS
@@ -11,15 +11,16 @@ from pymhlib.log import init_logger
 from pymhlib.population import Population
 from pymhlib.scheduler import Method, Scheduler, Result, MethodStatistics
 from pymhlib.settings import parse_settings, settings, get_settings_parser, get_settings_as_str, OwnSettings
-from pymhlib.solution import Solution
+from pymhlib.solution import Solution, TObj
 from pymhlib.ssga import SteadyStateGeneticAlgorithm
 
+import exercise1.util
 from exercise1.v2_MWCCPInstance import v2_MWCCPInstance
 from MWCCPSolutionEGA import MWCCPSolutionEGA
 
 DIRNAME = os.path.dirname(__file__)
 
-FILENAME: str = os.path.join(DIRNAME, '../competition_instances/inst_500_40_00021')
+FILENAME: str = os.path.join(DIRNAME, '../competition_instances/inst_200_20_00001')
 FILENAME1: str = os.path.join(DIRNAME, '../test_instances/medium_large/inst_500_40_00004')
 FILENAME_MED: str = os.path.join(DIRNAME, '../test_instances/medium/inst_200_20_00001')
 FILENAME_LARGE: str = os.path.join(DIRNAME, '../test_instances/medium_large/inst_500_40_00001')
@@ -80,6 +81,10 @@ class MyPopulation(Population):
 
 class GeneticAlgorithm(Scheduler):
 
+    plot_data = {
+        "iteration": [],
+        "obj_val": []
+    }
     def __init__(self, sol: Solution, meths_ch: List[Method],
                  meth_cx: Callable[[Solution, Solution], Solution],
                  meth_mu: Method,
@@ -169,6 +174,28 @@ class GeneticAlgorithm(Scheduler):
 
         return res
 
+    def log_iteration(self, method_name: str, obj_old: TObj, new_sol: Solution, new_incumbent: bool, in_any_case: bool,
+                      log_info: Optional[str]):
+
+        log = in_any_case or new_incumbent and self.own_settings.mh_lnewinc
+        if not log:
+            lfreq = self.own_settings.mh_lfreq
+            if lfreq > 0 and self.iteration % lfreq == 0:
+                log = True
+            elif lfreq < 0 and self.is_logarithmic_number(self.iteration):
+                log = True
+        if log:
+            s = f"I {self.iteration:>10d} {self.incumbent.obj():16.5f} {obj_old:16.6f} {new_sol.obj():16.5f} "
+            self.plot_data["iteration"].append(self.iteration)
+            self.plot_data["obj_val"].append(self.incumbent.obj())
+            if self.population is not None:
+                s += f"{self.population.obj_avg():16.6f} {self.population.obj_std():16.5f} "
+
+            s += f"{time.process_time()-self.time_start:12.4f} " \
+                f"{method_name:<20} {log_info if log_info is not None else ''}"
+
+            self.iter_logger.info(s)
+
 
 if __name__ == '__main__':
     parser = get_settings_parser()
@@ -198,13 +225,12 @@ if __name__ == '__main__':
     tuning_File = "../tuning_instances/small/inst_50_4_00001"
     tuning_File1 = "../tuning_instances/medium/inst_200_20_00001"
     tuning_File2 = "../tuning_instances/medium_large/inst_500_40_00002.txt"
-    mWCCPInstance = v2_MWCCPInstance(tuning_File)
+    mWCCPInstance = v2_MWCCPInstance(FILENAME)
     mWCCPSolution = MWCCPSolutionEGA(mWCCPInstance)
 
     ### Parameter
     # best parameters from tuning: 0.8 , selection method:  roulette , mh_pop_size:  500 , mh_titer:  1000
     parser.set_defaults(mh_ttime=5000) # time limit
-    parser.set_defaults(alg="ssga_tuned")
     parser = get_settings_parser()
     settings.mh_pop_size = 500 #Init population size
     settings.mh_pop_dupelim = False # Allow duplicates
@@ -222,7 +248,7 @@ if __name__ == '__main__':
         with open(output_file, "w") as file:
             file.write("ACO\tGA\n")
 
-        for i in range(5): #number for test runs
+        for i in range(1): #number for test runs
             alg.run({
                 "mh_fixed_crossover": 0.8,
                 "mh_selection_method": "roulette"})
@@ -231,6 +257,8 @@ if __name__ == '__main__':
 
             with open(output_file, "a") as file:  # Append to the file
                 file.write(f"{0}\t{alg.incumbent.obj()}\n")
+
+            exercise1.util.convergence_plot(alg.plot_data)
 
             alg = GeneticAlgorithm(mWCCPSolution,  # reinit the alg
                                    [Method("construct heu{i}", mWCCPSolution.construct, i) for i in
