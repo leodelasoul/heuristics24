@@ -1,5 +1,5 @@
-import numpy as np
 import random
+import numpy as np # type: ignore
 from algorithms.ant import Ant
 import logging
 
@@ -124,7 +124,7 @@ class MMAS:
                 if ant.cost < iteration_best_cost and ant.cost != float('inf'):
                     iteration_best_solution = ant.solution
                     iteration_best_cost = ant.cost
-
+ 
             # Update global best if a better solution is found
             if iteration_best_cost < self.best_cost:
                 self.best_cost = iteration_best_cost

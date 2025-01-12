@@ -26,17 +26,17 @@ PARAMS = {
         "reinit_threshold": 42,
     },
     "default": {
-        "alpha": 2.241,
-        "beta": 2.517,
-        "rho": 0.229,
+        "alpha": 2.2414470214334323,
+        "beta": 2.5174274204112432,
+        "rho": 0.22972339690248644,
         "num_ants": 100,
         "num_iterations": 83,
         "initial_tau": 7,
-        "reinit_threshold": 14,
-    },
+        "reinit_threshold": 14
+    }
 }
 
-def run_mmas_on_instances(folder, size, num_runs, output_folder, amount_of_files = 2):
+def run_mmas_on_instances(folder, size, num_runs, output_folder, amount_of_files = 2, start_with_file = 0):
     """
     Run MMAS on all instances in the folder and save results in CSV files.
     """
@@ -49,7 +49,12 @@ def run_mmas_on_instances(folder, size, num_runs, output_folder, amount_of_files
         
         instance_path = os.path.join(folder, instance_file)
         print(f"Processing instance: {instance_path}")
+        
         instance = MWCCPInstance(instance_path)
+
+        if start_with_file < 0:
+            start_with_file += 1
+            continue
 
         # Select parameters based on size
         params = PARAMS.get(size, PARAMS["default"])
@@ -82,7 +87,7 @@ def run_mmas_on_instances(folder, size, num_runs, output_folder, amount_of_files
 
 if __name__ == "__main__":
     
-    size = "medium"  # Change this to "medium", "medium_large", or "large" as needed
+    size = "medium_large"  # Change this to "medium", "medium_large", or "large" as needed
 
     if size not in TEST_FOLDERS:
         print(f"Invalid size '{size}'. Choose from: small, medium, medium_large, large")
