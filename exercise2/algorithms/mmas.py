@@ -1,6 +1,6 @@
 import numpy as np
 import random
-from .ant import Ant
+from algorithms.ant import Ant
 import logging
 
 # Configure logging to write only to a file
