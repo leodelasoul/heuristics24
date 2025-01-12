@@ -1,7 +1,12 @@
+from collections import defaultdict
 from typing import Dict
 
+import matplotlib.pyplot as plt
+import networkx as nx
 import numpy
 import numpy as np
+
+import util as util
 
 
 class v2_MWCCPInstance:
@@ -115,7 +120,9 @@ class v2_MWCCPInstance:
 
         self.n = U_size
 
-        self.instance = {"u": U_vector, "v": V_vector, "c": constraint_dict, "w": weight_matrix, "edges": edges, "c_tup": constraints, "adj_v": adjacency_from_V, "n": U_size}
+        crossing_contribution = self.preprocess_crossing_contributions(U_vector, V_vector, edges, weight_matrix)
+
+        self.instance = {"u": U_vector, "v": V_vector, "c": constraint_dict, "crossing_contrib": crossing_contribution, "w": weight_matrix, "edges": edges, "c_tup": constraints, "adj_v": adjacency_from_V, "n": U_size}
 
     def _precompute_crossings(self):
         # Create a mapping of edges for each node in V
@@ -146,3 +153,44 @@ class v2_MWCCPInstance:
         i, j = list(self.get_instance()['v']).index(v1), list(self.get_instance()['v']).index(v2)
         return self.crossing_matrix[i, j]
 
+
+    def preprocess_crossing_contributions(self, vertices_u, vertices_v, edges, weights):
+        # Map nodes in V to their edges
+        edges_by_v = defaultdict(list)
+        for (u, v, w) in edges:
+            edges_by_v[v].append((u, weights[u][v]))
+
+        # Initialize the crossing contribution dictionary
+        contribution = {}
+
+        # Precompute contributions for all pairs of nodes in V
+        for i, v1 in enumerate(vertices_v):
+            for j, v2 in enumerate(vertices_v):
+                if i == j:
+                    continue  # Skip duplicate or self-pairs
+
+                # Edges for v1 and v2
+                edges_v1 = edges_by_v[v1]
+                edges_v2 = edges_by_v[v2]
+
+                # Compute crossing contributions for (v1, v2)
+                contrib_v1_left = 0
+                contrib_v2_left = 0
+
+                for u1, w1 in edges_v1:
+                    for u2, w2 in edges_v2:
+                        if u1 == u2:
+                            continue  # Edges ending in the same U node do not cross
+
+                        contrib = w1 + w2  # Crossing contribution for this edge pair
+                        # Check if the edges (v1, u1) and (v2, u2) cross
+                        if u1 > u2:
+                            contrib_v1_left += contrib  # When v1 is left of v2
+                        elif u1 < u2:
+                            contrib_v2_left += contrib  # When v2 is left of v1
+
+                # Store contributions
+                contribution[(v1, v2)] = contrib_v1_left
+                contribution[(v2, v1)] = contrib_v2_left
+
+        return contribution

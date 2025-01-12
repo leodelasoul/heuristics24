@@ -1,0 +1,3 @@
+tuning_results_medium
+Best Parameters: {'alpha': 2.2414470214334323, 'beta': 2.5174274204112432, 'rho': 0.22972339690248644, 'num_ants': 100, 'num_iterations': 83, 'initial_tau': 7, 'reinit_threshold': 14}. 
+Best Cost: 4054029.7

@@ -29,11 +29,11 @@ FILENAME_TUNING_LARGE: str = os.path.join(DIRNAME, '../competition_instances/ins
 # FILENAME_LARGE: str = os.path.join(DIRNAME, 'test_instances/la')
 if __name__ == '__main__':
     parser = get_settings_parser()
-    parser.set_defaults(mh_titer=100) # number of iterations
-    parser.set_defaults(mh_ttime=180) # time limit
+    parser.set_defaults(mh_titer=1500) # number of iterations
+    parser.set_defaults(mh_ttime=300) # time limit
 
     ###INIT
-    mWCCPInstance = v2_MWCCPInstance(FILENAME_COMPET_4)  # FILENAME
+    mWCCPInstance = v2_MWCCPInstance(FILENAME_COMPET_1)  # FILENAME
     mWCCPSolution = v2_MWCCPSolution(mWCCPInstance)
 
     ###Parser arguments

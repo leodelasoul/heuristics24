@@ -1,0 +1,7 @@
+Instance: inst_50_4_00001
+Best Parameters: [1.3467293070155442, 1.7821212151464818, 0.204900674619853, 80, 454, 3, 33]
+Best Cost: 81166.0
+
+tuning_results_small
+Best Parameters: {'alpha': 1.8419192896947711, 'beta': 2.4520290182502418, 'rho': 0.10771225749644961, 'num_ants': 97, 'num_iterations': 842, 'initial_tau': 8, 'reinit_threshold': 42}
+Best Average Cost: 13462.0
