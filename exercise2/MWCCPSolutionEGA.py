@@ -49,8 +49,12 @@ class MWCCPSolutionEGA(PermutationSolution, ABC):
         self.prior_obj_val = self.calc_objective()
         return x
 
-    def crossover(self, parent1, parent2): #recombine
-        crossover_point = random.randint(0, self.inst.n)
+    def crossover(self, parent1, parent2, _par): #recombine
+        crossover_point = None
+        if(_par != None): #parametertuning
+            crossover_point = int(_par * self.inst.n)
+        else:
+            crossover_point = random.randint(0, self.inst.n)
         child1 = np.concatenate((parent1.x[:crossover_point], parent2.x[crossover_point:]))
         child2 = np.concatenate((parent2.x[:crossover_point], parent1.x[crossover_point:]))
         def replace_duplicates(child, parent):

@@ -19,13 +19,14 @@ from MWCCPSolutionEGA import MWCCPSolutionEGA
 
 DIRNAME = os.path.dirname(__file__)
 
-FILENAME: str = os.path.join(DIRNAME, '../competition_instances/inst_50_4_00001')
+FILENAME: str = os.path.join(DIRNAME, '../competition_instances/inst_500_40_00021')
 FILENAME1: str = os.path.join(DIRNAME, '../test_instances/small/inst_50_4_00001')
 FILENAME_MED: str = os.path.join(DIRNAME, '../test_instances/medium/inst_200_20_00001')
 FILENAME_LARGE: str = os.path.join(DIRNAME, '../test_instances/medium_large/inst_500_40_00001')
 FILENAME_LARGE1: str = os.path.join(DIRNAME, '../test_instances/large/inst_1000_60_00001')
 
 class MyPopulation(Population):
+    parameter_tune = None
     def __new__(cls, sol: Solution, meths_ch: List[Method], own_settings: dict = None):
         """Create population of mh_pop_size solutions using the list of construction heuristics if given.
 
@@ -54,6 +55,29 @@ class MyPopulation(Population):
                 idx += 1
         return obj
 
+    def roulette_wheel_selection(self) -> int:
+        total_fitness = sum(individual.obj() for individual in self)
+        pick = random.uniform(0, total_fitness)
+        current = 0
+        for idx, individual in enumerate(self):
+            current += individual.obj()
+            if current >= pick:
+                return idx
+        return len(self) - 1
+
+    def select(self) -> int:
+        """Select one solution and return its index.
+
+        So far calls tournament_selection. May be extended in the future.
+        """
+        try:
+            if self.parameter_tune["mh_selection_method"] == "roulette":
+                return self.roulette_wheel_selection()
+            else:
+                return self.tournament_selection()
+        except:
+            return self.roulette_wheel_selection()
+
 class GeneticAlgorithm(Scheduler):
 
     def __init__(self, sol: Solution, meths_ch: List[Method],
@@ -76,11 +100,12 @@ class GeneticAlgorithm(Scheduler):
         self.meth_cx = meth_cx
         self.meth_mu = meth_mu
         self.meth_ls = meth_li
-
+        self.own_setting = own_settings
         self.incumbent = self.population[random.randint(0,self.population.size)-1]
 
-    def run(self):
+    def run(self, own_settings=None):
         population = self.population
+        population.parameter_tune = own_settings
         while True:
             # create a new solution
             p1 = population[population.select()].copy()
@@ -93,11 +118,11 @@ class GeneticAlgorithm(Scheduler):
 
                 # workaround for Method not allowing a second Solution as parameter
                 def meth_cx(crossover, par2: Solution, par1: Solution, _par: Any, _res: Result):
-                    crossover(par1, par2)
+                    crossover(par1, par2, _par)
 
                 meth_cx_with_p2_bound = partial(meth_cx, self.meth_cx, p2)
 
-                meth = Method("crossover", meth_cx_with_p2_bound, None)
+                meth = Method("crossover", meth_cx_with_p2_bound, own_settings["mh_fixed_crossover"] if own_settings is not None else None)
                 methods.append(meth)
 
             # mutation
@@ -147,11 +172,7 @@ class GeneticAlgorithm(Scheduler):
 
 if __name__ == '__main__':
     parser = get_settings_parser()
-    parser.set_defaults(mh_titer=1000) # number of iterations
-    parser.set_defaults(mh_ttime=1800) # time limit
-
-    parser = get_settings_parser()
-    parser.add_argument("--alg", type=str, default='ssga', help='optimization algorithm to be used')
+    parser.add_argument("--alg", type=str, default='ssga', help='ssga, ssga_tuned')
     parser.add_argument("--inst_file", type=str, default=FILENAME1,
                         help='problem instance file')
     parser.add_argument("--meths_ch", type=int, default=1,
@@ -173,10 +194,15 @@ if __name__ == '__main__':
     logger.info("pymhlib demo for solving MWCCP")
 
     ###INIT
-    mWCCPInstance = v2_MWCCPInstance(FILENAME)
+    mWCCPInstance = v2_MWCCPInstance(FILENAME1)
     mWCCPSolution = MWCCPSolutionEGA(mWCCPInstance)
-    settings.mh_pop_size = 1000 #Init population size
-    settings.mh_pop_dupelim = False
+
+    ### Parameter
+    parser.set_defaults(mh_titer=100) # number of iterations
+    parser.set_defaults(mh_ttime=5000) # time limit
+    parser = get_settings_parser()
+    settings.mh_pop_size = 100 #Init population size
+    settings.mh_pop_dupelim = False # Allow duplicates
     settings.mh_ssga_cross_prob = 1 # whether to use crossover , kinda useless
     settings.mh_ssga_loc_prob = 0.1 # whether to use local search
 
@@ -186,6 +212,37 @@ if __name__ == '__main__':
                                mWCCPSolution.crossover,
                                Method("mutation", mWCCPSolution.shaking, 1),
                                Method("local_search", mWCCPSolution.local_improve, 1))
-        alg.run()
+        alg.run(None)
         logger.info("")
         alg.main_results()
+
+    if settings.alg == 'ssga_tuned':
+
+        alg = GeneticAlgorithm(mWCCPSolution,
+                               [Method("construct heu{i}", mWCCPSolution.construct, i) for i in range(settings.meths_ch)],
+                               mWCCPSolution.crossover,
+                               Method("mutation", mWCCPSolution.shaking, 1),
+                               Method("local_search", mWCCPSolution.local_improve, 1))
+        tuned_parameter = {
+            "mh_fixed_crossover": [0.6, 0.8, 0.9],
+            "mh_selection_method": ["tournament", "roulette"],
+            "mh_pop_size": [100, 500],
+            "mh_titer": [100, 1000]
+        }
+        count = 0
+        for i in range(3): #permutate
+            for j in range(2):
+                count += 1
+                settings.mh_pop_size = tuned_parameter["mh_pop_size"][j]
+                settings.mh_titer = tuned_parameter["mh_titer"][j]
+                alg.run({
+                    "mh_fixed_crossover": tuned_parameter["mh_fixed_crossover"][i],
+                    "mh_selection_method": tuned_parameter["mh_selection_method"][j],
+                })
+
+                print("###")
+                print("Parameter tuned run:", count, " with:", )
+                print("Objective Value: ", alg.incumbent.obj())
+                print("Best Solution: ", alg.incumbent)
+                print("Time needed", alg.run_time)
+                print("###")
