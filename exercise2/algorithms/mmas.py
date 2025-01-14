@@ -7,7 +7,7 @@ import logging
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(message)s",
-    filename="exercise2/mmas.log",
+    filename="../mmas.log",
     filemode="w"
 )
 
